@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: http://chihiro324.github.iomyblog/sitemap.xml
+Sitemap: https://xdcarlos.dev/sitemap.xml
