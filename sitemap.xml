@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>http://chihiro324.github.io/2022/03/16/welcome-to-jekyll/</loc>
+<loc>http://chihiro324.github.io/myblog/2022/03/16/welcome-to-jekyll/</loc>
 <lastmod>2022-03-16T11:35:45+00:00</lastmod>
 </url>
 <url>
-<loc>http://chihiro324.github.io/about/</loc>
+<loc>http://chihiro324.github.io/myblog/about/</loc>
 </url>
 <url>
-<loc>http://chihiro324.github.io/archives/</loc>
+<loc>http://chihiro324.github.io/myblog/archives/</loc>
 </url>
 <url>
-<loc>http://chihiro324.github.io/</loc>
+<loc>http://chihiro324.github.io/myblog/</loc>
 </url>
 <url>
-<loc>http://chihiro324.github.io/categories/jekyll/</loc>
+<loc>http://chihiro324.github.io/myblog/categories/jekyll/</loc>
 </url>
 <url>
-<loc>http://chihiro324.github.io/categories/update/</loc>
+<loc>http://chihiro324.github.io/myblog/categories/update/</loc>
 </url>
 </urlset>
