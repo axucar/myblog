@@ -113,3 +113,5 @@ sufficient `username.github.io` since the `CNAME` file is unique to the repo.
 baseurl: ""
 url: "https://xdcarlos.dev" #custom domain name
 ```
+
+:warning:
