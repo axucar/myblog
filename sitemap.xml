@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>https://xdcarlos.dev/2022/03/16/welcome-to-jekyll/</loc>
-<lastmod>2022-03-16T11:35:45+00:00</lastmod>
+<loc>https://xdcarlos.dev/2022/04/26/create-jekyll-blog/</loc>
+<lastmod>2022-04-26T00:00:00+00:00</lastmod>
 </url>
 <url>
 <loc>https://xdcarlos.dev/about/</loc>
@@ -12,11 +12,5 @@
 </url>
 <url>
 <loc>https://xdcarlos.dev/</loc>
-</url>
-<url>
-<loc>https://xdcarlos.dev/categories/jekyll/</loc>
-</url>
-<url>
-<loc>https://xdcarlos.dev/categories/update/</loc>
 </url>
 </urlset>

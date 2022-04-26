@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  
+  
+  <title>Creating this blog</title>
+  <meta name="description" content="I wanted to create a personal page that was easy to maintain in markdown and quick to set up. I came across and was inspired by Andrej Karpathy’s simple Jekyll blog">
+  
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="https://xdcarlos.dev/2022/04/26/create-jekyll-blog/">
+  
+  
+  <link rel="alternate" type="application/rss+xml" title="Carlos Xu" href="https://xdcarlos.dev/feed.xml">
+
+  
+
+  
+  <meta property="og:title" content="Creating this blog">
+  <meta property="og:site_name" content="Carlos Xu">
+  <meta property="og:url" content="https://xdcarlos.dev/2022/04/26/create-jekyll-blog/">
+  <meta property="og:description" content="I wanted to create a personal page that was easy to maintain in markdown and quick to set up. I came across and was inspired by Andrej Karpathy’s simple Jekyll blog">
+  
+  
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="jekyllrb">
+  <meta name="twitter:title" content="Creating this blog">
+  <meta name="twitter:description" content="I wanted to create a personal page that was easy to maintain in markdown and quick to set up. I came across and was inspired by Andrej Karpathy’s simple Jekyll blog">
+  
+    <meta name="twitter:creator" content="jekyllrb">
+  
+  
+
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
+
+  
+
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">Carlos Xu</a>
+
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/archives/">Archives</a>
+      
+        
+        <a class="page-link" href="https://github.com/axucar">GitHub</a>
+      
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    
+      <h1 class="post-title" itemprop="name headline">Creating this blog</h1>
+    
+    <p class="post-meta"><time datetime="2022-04-26T00:00:00+00:00" itemprop="datePublished">Apr 26, 2022</time></p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>I wanted to create a personal page that was easy to maintain in markdown and 
+quick to set up. I came across and was inspired by Andrej Karpathy’s simple Jekyll <a href="http://karpathy.github.io/2014/07/01/switching-to-jekyll/">blog</a></p>
+
+<h2 id="installation">Installation</h2>
+
+<p>Jekyll is written in Ruby. Gems are code you can include in Ruby projects such
+as this blog. 
+So first, we install Ruby and other requirements. I am on Ubuntu so I use 
+the apt package manager. In addition to <code class="language-plaintext highlighter-rouge">ruby-full</code> we install <code class="language-plaintext highlighter-rouge">build-essential</code> which includes
+GCC compiler and Make which are required by Jekyll.
+For other OS, check out their <a href="https://jekyllrb.com/docs/installation/">installation</a>
+page. We also set appropriate paths in the bashrc for installing gems.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt-get <span class="nb">install </span>ruby-full build-essential
+<span class="c">#Avoid installing gems as root user. define GEM_HOME, add to gems/bin/ to PATH</span>
+<span class="nb">echo</span> <span class="s1">'# Install Ruby Gems to ~/gems'</span> <span class="o">&gt;&gt;</span> ~/.bashrc
+<span class="nb">echo</span> <span class="s1">'export GEM_HOME="$HOME/gems"'</span> <span class="o">&gt;&gt;</span> ~/.bashrc
+<span class="nb">echo</span> <span class="s1">'export PATH="$HOME/gems/bin:$PATH"'</span> <span class="o">&gt;&gt;</span> ~/.bashrc
+<span class="nb">source</span> ~/.bashrc
+
+gem <span class="nb">install </span>jekyll bundler
+</code></pre></div></div>
+<p>Jekyll is itself a ruby gem: If I run <code class="language-plaintext highlighter-rouge">which jekyll</code>, it should return <code class="language-plaintext highlighter-rouge">~/gems/bin/jekyll</code></p>
+
+<h2 id="using-jekyll">Using Jekyll</h2>
+<p>Now, we should be able to spin up a quick blog in command line using</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>jekyll new myblog
+<span class="nb">cd </span>myblog
+bundle <span class="nb">install</span> <span class="c">#install gems in Gemfile into ~/gems/gems</span>
+bundle <span class="nb">exec </span>jekyll serve <span class="c">#should now see </span>
+</code></pre></div></div>
+<p>Now we should see a functional blog at <code class="language-plaintext highlighter-rouge">http://localhost:4000</code>. Let’s turn it into 
+a fancier Jekyll theme. 
+Inside this <code class="language-plaintext highlighter-rouge">myblog</code> folder, you will see that Gemfile is used to specify the 
+version of Jekyll and other Ruby gems. For instance, we will need to specify the 
+Jekyll theme (which is a gem) so that bundle can install it. For instance: I chose to 
+use <code class="language-plaintext highlighter-rouge">whiteglass</code>.</p>
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#inside Gemfile</span>
+<span class="n">gem</span> <span class="s2">"jekyll"</span><span class="p">,</span> <span class="s2">"~&gt; 4.2.2"</span>
+<span class="c1">#gem "minima", "~&gt; 2.5" #minima is the default theme</span>
+<span class="n">gem</span> <span class="s2">"jekyll-whiteglass"</span>
+</code></pre></div></div>
+<p>Next I followed the instructions on the whiteglass <a href="https://github.com/yous/whiteglass">repo</a>.
+To recap:</p>
+<ol>
+  <li>Change theme in Gemfile to <code class="language-plaintext highlighter-rouge">jekyll-whiteglass</code> from <code class="language-plaintext highlighter-rouge">minima</code></li>
+  <li>Edit <code class="language-plaintext highlighter-rouge">_config.yml</code> to use the theme and plugins</li>
+  <li>Copy some adhoc files from the theme repo</li>
+</ol>
+
+<p><strong>Note</strong>: remove the files <code class="language-plaintext highlighter-rouge">index.markdown</code> and <code class="language-plaintext highlighter-rouge">about.markdown</code> that come with Jekyll default blog, 
+since it will conflict with <code class="language-plaintext highlighter-rouge">index.html</code> and <code class="language-plaintext highlighter-rouge">about.md</code> from the whiteglass theme.
+Now run <code class="language-plaintext highlighter-rouge">bundle install</code> and <code class="language-plaintext highlighter-rouge">bundle exec jekyll serve</code> to see the new theme.</p>
+
+<h2 id="github-pages">Github Pages</h2>
+<p>The <code class="language-plaintext highlighter-rouge">whiteglass</code> repo recommended Travis CI for hosting the blog, but it seemed to be credit-based, or 
+might require payment in the future, so I chose to use Github Pages. First,
+we turn our repo into a git repo:</p>
+
+<pre><code class="language-git">git init
+git branch -m main #rename master to main
+
+##create your repo in github.com first, then add it as origin like so:
+git remote add origin git@github.com:axucar/myblog.git
+
+##do your add and commits
+git push -u origin main
+</code></pre>
+<p>If we use the standard Github Actions (by renaming repo to <code class="language-plaintext highlighter-rouge">username.github.io</code>)
+, it will work for the <code class="language-plaintext highlighter-rouge">minima</code> theme but not our whiteglass theme (see <a href="https://pages.github.com/themes/">supported themes</a>)</p>
+
+<p>I used the starter Github Actions deploy template from <a href="https://github.com/MichaelCurrin/jekyll-gh-actions-quickstart">MichaelCurrin</a>.
+Specifically, I just copy <code class="language-plaintext highlighter-rouge">.github/workflows/main.yml</code> into our main <code class="language-plaintext highlighter-rouge">myblog</code> folder.
+As soon as we push this <code class="language-plaintext highlighter-rouge">.yml</code> file, Github kicks off a workflow run <code class="language-plaintext highlighter-rouge">GH Pages Deploy</code>
+under Github’s Actions tab. After 2 minutes or so, it will publish the ouput into <code class="language-plaintext highlighter-rouge">gh-pages</code> branch.</p>
+
+<p>Next, we need to go to Settings of the repo and select source: gh-pages (root).
+This will kick off a second workflow run <code class="language-plaintext highlighter-rouge">pages-build-deployment</code>
+Notice however that our blog is deployed but clearly missing any styling.</p>
+
+<p><a href="/assets/badly-rendered-jekyll.png"><img src="/assets/badly-rendered-jekyll.png" alt="image1" /></a></p>
+
+<p>I noticed that in developer tools (“Inspect” on Chrome), the assets folder containing CSS was
+not appearing inside the <code class="language-plaintext highlighter-rouge">myblog</code> folder. 
+The way to get around this is to set <code class="language-plaintext highlighter-rouge">baseurl</code> and <code class="language-plaintext highlighter-rouge">url</code> in <code class="language-plaintext highlighter-rouge">_config.yml</code>.</p>
+
+<div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">baseurl</span><span class="pi">:</span> <span class="s">“myblog”</span> <span class="c1">#(ie. name of Github repo )</span>
+<span class="na">url</span><span class="pi">:</span> <span class="s">“http://username.github.io”</span>
+</code></pre></div></div>
+<p>Upon pushing this change, Github will again kick off <code class="language-plaintext highlighter-rouge">GH Pages Deploy</code> and <code class="language-plaintext highlighter-rouge">pages-build-deployment</code>
+workflows. Then, you will be able to see a properly rendered blog at <code class="language-plaintext highlighter-rouge">username.github.io/myblog</code></p>
+
+<h3 id="custom-domain">Custom Domain</h3>
+<p>To spice things up, we should set a custom domain name.</p>
+<ol>
+  <li>Add CNAME file in repo, with custom domain</li>
+  <li>I used Google Domains:
+<a href="/assets/google-domains-demo.png"><img src="/assets/google-domains-demo.png" alt="image1" /></a>
+<strong>Note</strong>: At first I thought <code class="language-plaintext highlighter-rouge">Data</code> column should point to <code class="language-plaintext highlighter-rouge">username.github.io/myblog</code>. I suppose it’s 
+sufficient <code class="language-plaintext highlighter-rouge">username.github.io</code> since the <code class="language-plaintext highlighter-rouge">CNAME</code> file is unique to the repo.</li>
+  <li>The CSS was again not rendering in the right place, so I modified the <code class="language-plaintext highlighter-rouge">_config.yml</code> to be:</li>
+</ol>
+
+<div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">baseurl</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+<span class="na">url</span><span class="pi">:</span> <span class="s2">"</span><span class="s">https://xdcarlos.dev"</span> <span class="c1">#custom domain name</span>
+</code></pre></div></div>
+
+  </div>
+
+  
+
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <p>
+      
+
+&copy;  - Powered by <a href="https://jekyllrb.com">Jekyll</a> &amp; <a href="https://github.com/yous/whiteglass">whiteglass</a> - Subscribe via <a href="https://xdcarlos.dev/feed.xml">RSS</a>
+
+    </p>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

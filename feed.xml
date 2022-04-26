@@ -5,7 +5,7 @@
   
   <link href="https://xdcarlos.dev/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://xdcarlos.dev/" rel="alternate" type="text/html" />
-  <updated>2022-04-26T10:03:25+00:00</updated>
+  <updated>2022-04-26T17:15:00+00:00</updated>
   <id>https://xdcarlos.dev//</id>
 
   
@@ -22,31 +22,120 @@
   
     <entry>
       
-      <title type="html">Welcome to Jekyll!</title>
+      <title type="html">Creating this blog</title>
       
       
-      <link href="https://xdcarlos.dev/2022/03/16/welcome-to-jekyll/" rel="alternate" type="text/html" title="Welcome to Jekyll!" />
+      <link href="https://xdcarlos.dev/2022/04/26/create-jekyll-blog/" rel="alternate" type="text/html" title="Creating this blog" />
       
-      <published>2022-03-16T11:35:45+00:00</published>
-      <updated>2022-03-16T11:35:45+00:00</updated>
-      <id>https://xdcarlos.dev/2022/03/16/welcome-to-jekyll</id>
-      <content type="html" xml:base="https://xdcarlos.dev/2022/03/16/welcome-to-jekyll/">&lt;p&gt;You’ll find this post in your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_posts&lt;/code&gt; directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jekyll serve&lt;/code&gt;, which launches a web server and auto-regenerates your site when a file is updated.&lt;/p&gt;
+      <published>2022-04-26T00:00:00+00:00</published>
+      <updated>2022-04-26T00:00:00+00:00</updated>
+      <id>https://xdcarlos.dev/2022/04/26/create-jekyll-blog</id>
+      <content type="html" xml:base="https://xdcarlos.dev/2022/04/26/create-jekyll-blog/">&lt;p&gt;I wanted to create a personal page that was easy to maintain in markdown and 
+quick to set up. I came across and was inspired by Andrej Karpathy’s simple Jekyll &lt;a href=&quot;http://karpathy.github.io/2014/07/01/switching-to-jekyll/&quot;&gt;blog&lt;/a&gt;&lt;/p&gt;
 
-&lt;p&gt;Jekyll requires blog post files to be named according to the following format:&lt;/p&gt;
+&lt;h2 id=&quot;installation&quot;&gt;Installation&lt;/h2&gt;
 
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;YEAR-MONTH-DAY-title.MARKUP&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Jekyll is written in Ruby. Gems are code you can include in Ruby projects such
+as this blog. 
+So first, we install Ruby and other requirements. I am on Ubuntu so I use 
+the apt package manager. In addition to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ruby-full&lt;/code&gt; we install &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build-essential&lt;/code&gt; which includes
+GCC compiler and Make which are required by Jekyll.
+For other OS, check out their &lt;a href=&quot;https://jekyllrb.com/docs/installation/&quot;&gt;installation&lt;/a&gt;
+page. We also set appropriate paths in the bashrc for installing gems.&lt;/p&gt;
 
-&lt;p&gt;Where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;YEAR&lt;/code&gt; is a four-digit number, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MONTH&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DAY&lt;/code&gt; are both two-digit numbers, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MARKUP&lt;/code&gt; is the file extension representing the format used in the file. After that, include the necessary front matter. Take a look at the source for this post to get an idea about how it works.&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt-get &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;ruby-full build-essential
+&lt;span class=&quot;c&quot;&gt;#Avoid installing gems as root user. define GEM_HOME, add to gems/bin/ to PATH&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;# Install Ruby Gems to ~/gems&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; ~/.bashrc
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;export GEM_HOME=&quot;$HOME/gems&quot;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; ~/.bashrc
+&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;export PATH=&quot;$HOME/gems/bin:$PATH&quot;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; ~/.bashrc
+&lt;span class=&quot;nb&quot;&gt;source&lt;/span&gt; ~/.bashrc
 
-&lt;p&gt;Jekyll also offers powerful support for code snippets:&lt;/p&gt;
+gem &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;jekyll bundler
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Jekyll is itself a ruby gem: If I run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;which jekyll&lt;/code&gt;, it should return &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/gems/bin/jekyll&lt;/code&gt;&lt;/p&gt;
 
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hi, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;print_hi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Tom&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;#=&amp;gt; prints &apos;Hi, Tom&apos; to STDOUT.&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+&lt;h2 id=&quot;using-jekyll&quot;&gt;Using Jekyll&lt;/h2&gt;
+&lt;p&gt;Now, we should be able to spin up a quick blog in command line using&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;jekyll new myblog
+&lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;myblog
+bundle &lt;span class=&quot;nb&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;#install gems in Gemfile into ~/gems/gems&lt;/span&gt;
+bundle &lt;span class=&quot;nb&quot;&gt;exec &lt;/span&gt;jekyll serve &lt;span class=&quot;c&quot;&gt;#should now see &lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Now we should see a functional blog at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;http://localhost:4000&lt;/code&gt;. Let’s turn it into 
+a fancier Jekyll theme. 
+Inside this &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myblog&lt;/code&gt; folder, you will see that Gemfile is used to specify the 
+version of Jekyll and other Ruby gems. For instance, we will need to specify the 
+Jekyll theme (which is a gem) so that bundle can install it. For instance: I chose to 
+use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;whiteglass&lt;/code&gt;.&lt;/p&gt;
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#inside Gemfile&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;gem&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;jekyll&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;~&amp;gt; 4.2.2&quot;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;#gem &quot;minima&quot;, &quot;~&amp;gt; 2.5&quot; #minima is the default theme&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;gem&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;jekyll-whiteglass&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Next I followed the instructions on the whiteglass &lt;a href=&quot;https://github.com/yous/whiteglass&quot;&gt;repo&lt;/a&gt;.
+To recap:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Change theme in Gemfile to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jekyll-whiteglass&lt;/code&gt; from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;minima&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Edit &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_config.yml&lt;/code&gt; to use the theme and plugins&lt;/li&gt;
+  &lt;li&gt;Copy some adhoc files from the theme repo&lt;/li&gt;
+&lt;/ol&gt;
 
-&lt;p&gt;Check out the &lt;a href=&quot;https://jekyllrb.com/docs/home&quot;&gt;Jekyll docs&lt;/a&gt; for more info on how to get the most out of Jekyll. File all bugs/feature requests at &lt;a href=&quot;https://github.com/jekyll/jekyll&quot;&gt;Jekyll’s GitHub repo&lt;/a&gt;. If you have questions, you can ask them on &lt;a href=&quot;https://talk.jekyllrb.com/&quot;&gt;Jekyll Talk&lt;/a&gt;.&lt;/p&gt;</content>
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt;: remove the files &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;index.markdown&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;about.markdown&lt;/code&gt; that come with Jekyll default blog, 
+since it will conflict with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;index.html&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;about.md&lt;/code&gt; from the whiteglass theme.
+Now run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bundle install&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bundle exec jekyll serve&lt;/code&gt; to see the new theme.&lt;/p&gt;
+
+&lt;h2 id=&quot;github-pages&quot;&gt;Github Pages&lt;/h2&gt;
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;whiteglass&lt;/code&gt; repo recommended Travis CI for hosting the blog, but it seemed to be credit-based, or 
+might require payment in the future, so I chose to use Github Pages. First,
+we turn our repo into a git repo:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-git&quot;&gt;git init
+git branch -m main #rename master to main
+
+##create your repo in github.com first, then add it as origin like so:
+git remote add origin git@github.com:axucar/myblog.git
+
+##do your add and commits
+git push -u origin main
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;If we use the standard Github Actions (by renaming repo to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;username.github.io&lt;/code&gt;)
+, it will work for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;minima&lt;/code&gt; theme but not our whiteglass theme (see &lt;a href=&quot;https://pages.github.com/themes/&quot;&gt;supported themes&lt;/a&gt;)&lt;/p&gt;
+
+&lt;p&gt;I used the starter Github Actions deploy template from &lt;a href=&quot;https://github.com/MichaelCurrin/jekyll-gh-actions-quickstart&quot;&gt;MichaelCurrin&lt;/a&gt;.
+Specifically, I just copy &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.github/workflows/main.yml&lt;/code&gt; into our main &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myblog&lt;/code&gt; folder.
+As soon as we push this &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.yml&lt;/code&gt; file, Github kicks off a workflow run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GH Pages Deploy&lt;/code&gt;
+under Github’s Actions tab. After 2 minutes or so, it will publish the ouput into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;gh-pages&lt;/code&gt; branch.&lt;/p&gt;
+
+&lt;p&gt;Next, we need to go to Settings of the repo and select source: gh-pages (root).
+This will kick off a second workflow run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pages-build-deployment&lt;/code&gt;
+Notice however that our blog is deployed but clearly missing any styling.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;/assets/badly-rendered-jekyll.png&quot;&gt;&lt;img src=&quot;/assets/badly-rendered-jekyll.png&quot; alt=&quot;image1&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;I noticed that in developer tools (“Inspect” on Chrome), the assets folder containing CSS was
+not appearing inside the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myblog&lt;/code&gt; folder. 
+The way to get around this is to set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;baseurl&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;url&lt;/code&gt; in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_config.yml&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;baseurl&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;“myblog”&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;#(ie. name of Github repo )&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;“http://username.github.io”&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Upon pushing this change, Github will again kick off &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GH Pages Deploy&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pages-build-deployment&lt;/code&gt;
+workflows. Then, you will be able to see a properly rendered blog at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;username.github.io/myblog&lt;/code&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;custom-domain&quot;&gt;Custom Domain&lt;/h3&gt;
+&lt;p&gt;To spice things up, we should set a custom domain name.&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Add CNAME file in repo, with custom domain&lt;/li&gt;
+  &lt;li&gt;I used Google Domains:
+&lt;a href=&quot;/assets/google-domains-demo.png&quot;&gt;&lt;img src=&quot;/assets/google-domains-demo.png&quot; alt=&quot;image1&quot; /&gt;&lt;/a&gt;
+&lt;strong&gt;Note&lt;/strong&gt;: At first I thought &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Data&lt;/code&gt; column should point to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;username.github.io/myblog&lt;/code&gt;. I suppose it’s 
+sufficient &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;username.github.io&lt;/code&gt; since the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CNAME&lt;/code&gt; file is unique to the repo.&lt;/li&gt;
+  &lt;li&gt;The CSS was again not rendering in the right place, so I modified the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_config.yml&lt;/code&gt; to be:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;baseurl&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;https://xdcarlos.dev&quot;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;#custom domain name&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content>
 
       
       
@@ -57,15 +146,11 @@
       
 
       
-        <category term="jekyll" />
-      
-        <category term="update" />
-      
 
       
 
       
-        <summary type="html">You’ll find this post in your _posts directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run jekyll serve, which launches a web server and auto-regenerates your site when a file is updated.</summary>
+        <summary type="html">I wanted to create a personal page that was easy to maintain in markdown and quick to set up. I came across and was inspired by Andrej Karpathy’s simple Jekyll blog</summary>
       
 
       
