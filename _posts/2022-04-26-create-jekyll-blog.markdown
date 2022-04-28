@@ -114,4 +114,4 @@ baseurl: ""
 url: "https://xdcarlos.dev" #custom domain name
 ```
 
-:warning:
+
