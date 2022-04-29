@@ -4,4 +4,4 @@ title: "About"
 permalink: /about/
 ---
 
-Hi! My name is Carlos. 
+Hi! Welcome to my blog :speech_balloon:

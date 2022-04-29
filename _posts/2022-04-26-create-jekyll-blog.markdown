@@ -55,8 +55,7 @@ To recap:
 2. Edit `_config.yml` to use the theme and plugins
 3. Copy some adhoc files from the theme repo
 
-
-**Note**: remove the files `index.markdown` and `about.markdown` that come with Jekyll default blog, 
+> :warning: remove the files `index.markdown` and `about.markdown` that come with Jekyll default blog, 
 since it will conflict with `index.html` and `about.md` from the whiteglass theme.
 Now run `bundle install` and `bundle exec jekyll serve` to see the new theme.
 
@@ -111,7 +110,6 @@ sufficient `username.github.io` since the `CNAME` file is unique to the repo.
 
 ```yml
 baseurl: ""
-url: "https://xdcarlos.dev" #custom domain name
+url: "https://axucar.ca" #custom domain name
 ```
-
 
