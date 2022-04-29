@@ -14,17 +14,17 @@
   
 
   <link rel="stylesheet" href="/assets/main.css">
-  <link rel="canonical" href="https://xdcarlos.dev/2022/04/26/create-jekyll-blog/">
+  <link rel="canonical" href="https://axucar.ca/2022/04/26/create-jekyll-blog/">
   
   
-  <link rel="alternate" type="application/rss+xml" title="Carlos" href="https://xdcarlos.dev/feed.xml">
+  <link rel="alternate" type="application/rss+xml" title="Carlos" href="https://axucar.ca/feed.xml">
 
   
 
   
   <meta property="og:title" content="Creating this blog">
   <meta property="og:site_name" content="Carlos">
-  <meta property="og:url" content="https://xdcarlos.dev/2022/04/26/create-jekyll-blog/">
+  <meta property="og:url" content="https://axucar.ca/2022/04/26/create-jekyll-blog/">
   <meta property="og:description" content="I wanted to create a personal page that was easy to maintain in markdown and quick to set up. I came across and was inspired by Andrej Karpathy’s simple Jekyll blog">
   
   
@@ -129,14 +129,17 @@ use <code class="language-plaintext highlighter-rouge">whiteglass</code>.</p>
 <p>Next I followed the instructions on the whiteglass <a href="https://github.com/yous/whiteglass">repo</a>.
 To recap:</p>
 <ol>
-  <li>Change theme in Gemfile to <code class="language-plaintext highlighter-rouge">jekyll-whiteglass</code> from <code class="language-plaintext highlighter-rouge">minima</code></li>
+  <li>Change theme in Gemfile to <code class="language-plaintext highlighter-rouge">jekyll-whiteglass</code> from <code class="language-plaintext highlighter-rouge">minima</code>
+</li>
   <li>Edit <code class="language-plaintext highlighter-rouge">_config.yml</code> to use the theme and plugins</li>
   <li>Copy some adhoc files from the theme repo</li>
 </ol>
 
-<p><strong>Note</strong>: remove the files <code class="language-plaintext highlighter-rouge">index.markdown</code> and <code class="language-plaintext highlighter-rouge">about.markdown</code> that come with Jekyll default blog, 
+<blockquote>
+  <p><img class="emoji" title=":warning:" alt=":warning:" src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png" height="20" width="20"> remove the files <code class="language-plaintext highlighter-rouge">index.markdown</code> and <code class="language-plaintext highlighter-rouge">about.markdown</code> that come with Jekyll default blog, 
 since it will conflict with <code class="language-plaintext highlighter-rouge">index.html</code> and <code class="language-plaintext highlighter-rouge">about.md</code> from the whiteglass theme.
 Now run <code class="language-plaintext highlighter-rouge">bundle install</code> and <code class="language-plaintext highlighter-rouge">bundle exec jekyll serve</code> to see the new theme.</p>
+</blockquote>
 
 <h2 id="github-pages">Github Pages</h2>
 <p>The <code class="language-plaintext highlighter-rouge">whiteglass</code> repo recommended Travis CI for hosting the blog, but it seemed to be credit-based, or 
@@ -164,7 +167,7 @@ under Github’s Actions tab. After 2 minutes or so, it will publish the ouput i
 This will kick off a second workflow run <code class="language-plaintext highlighter-rouge">pages-build-deployment</code>
 Notice however that our blog is deployed but clearly missing any styling.</p>
 
-<p><a href="/assets/badly-rendered-jekyll.png"><img src="/assets/badly-rendered-jekyll.png" alt="image1" /></a></p>
+<p><a href="/assets/badly-rendered-jekyll.png"><img src="/assets/badly-rendered-jekyll.png" alt="image1"></a></p>
 
 <p>I noticed that in developer tools (“Inspect” on Chrome), the assets folder containing CSS was
 not appearing inside the <code class="language-plaintext highlighter-rouge">myblog</code> folder. 
@@ -181,14 +184,14 @@ workflows. Then, you will be able to see a properly rendered blog at <code class
 <ol>
   <li>Add CNAME file in repo, with custom domain</li>
   <li>I used Google Domains:
-<a href="/assets/google-domains-demo.png"><img src="/assets/google-domains-demo.png" alt="image1" /></a>
+<a href="/assets/google-domains-demo.png"><img src="/assets/google-domains-demo.png" alt="image1"></a>
 <strong>Note</strong>: At first I thought <code class="language-plaintext highlighter-rouge">Data</code> column should point to <code class="language-plaintext highlighter-rouge">username.github.io/myblog</code>. I suppose it’s 
 sufficient <code class="language-plaintext highlighter-rouge">username.github.io</code> since the <code class="language-plaintext highlighter-rouge">CNAME</code> file is unique to the repo.</li>
   <li>The CSS was again not rendering in the right place, so I modified the <code class="language-plaintext highlighter-rouge">_config.yml</code> to be:</li>
 </ol>
 
 <div class="language-yml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">baseurl</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
-<span class="na">url</span><span class="pi">:</span> <span class="s2">"</span><span class="s">https://xdcarlos.dev"</span> <span class="c1">#custom domain name</span>
+<span class="na">url</span><span class="pi">:</span> <span class="s2">"</span><span class="s">https://axucar.ca"</span> <span class="c1">#custom domain name</span>
 </code></pre></div></div>
 
 
@@ -208,7 +211,7 @@ sufficient <code class="language-plaintext highlighter-rouge">username.github.io
     <p>
       
 
-&copy;  - Powered by <a href="https://jekyllrb.com">Jekyll</a> &amp; <a href="https://github.com/yous/whiteglass">whiteglass</a> - Subscribe via <a href="https://xdcarlos.dev/feed.xml">RSS</a>
+©  - Powered by <a href="https://jekyllrb.com">Jekyll</a> &amp; <a href="https://github.com/yous/whiteglass">whiteglass</a> - Subscribe via <a href="https://axucar.ca/feed.xml">RSS</a>
 
     </p>
 

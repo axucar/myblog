@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://xdcarlos.dev/sitemap.xml
+Sitemap: https://axucar.ca/sitemap.xml
