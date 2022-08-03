@@ -5,7 +5,7 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-04-29T21:15:22+00:00</updated>
+  <updated>2022-08-03T23:15:02+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
@@ -18,6 +18,183 @@
 
   
 
+  
+  
+    <entry>
+      
+      <title type="html">Uniswap, Geth, SSH</title>
+      
+      
+      <link href="https://axucar.ca/2022/08/03/running-geth-node/" rel="alternate" type="text/html" title="Uniswap, Geth, SSH" />
+      
+      <published>2022-08-03T00:00:00+00:00</published>
+      <updated>2022-08-03T00:00:00+00:00</updated>
+      <id>https://axucar.ca/2022/08/03/running-geth-node</id>
+      <content type="html" xml:base="https://axucar.ca/2022/08/03/running-geth-node/">&lt;p&gt;Behind major Ethereum applications, such as OpenSea for NFTs and dYdX for trading, there is usually a “blockchain developer platform” (e.g. Alchemy, QuickNode, Infura) that acts as an API layer to interact with any given blockchain network. For instance, to pull Uniswap on-chain price for WETH-USDC, I can get an API key from Alchemy and use Uniswap’s SDK (example &lt;a href=&quot;#uniswap-on-chain-pricing&quot;&gt;below&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;However, in the spirit of learning, I was curious how to run a local Ethereum node instead. I used a NUC (Intel  i7 9700, 32GB RAM, 2TB SSD, Ubuntu). In particular, the Go Ethereum (Geth) client seemed like the easiest one to get started with. Note that for the sake of client diversity for the Ethereum network, it is recommended to use other client implementations since Geth is by far the most popular at this point (for instance, OpenEthereum or Nethermind).&lt;/p&gt;
+
+&lt;p&gt;Since I was running dual boot with Windows with the storage split half-way, I first expanded the Ubuntu partition to make more room. In Ubuntu, a mounted drive that is in use can’t be expanded, so I boot from a live Ubuntu USB in trial mode, and used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;gparted&lt;/code&gt; which is pre-installed to do the disk resizing.&lt;/p&gt;
+
+&lt;h2 id=&quot;get-started-with-geth&quot;&gt;Get started with Geth&lt;/h2&gt;
+
+&lt;p&gt;I installed Geth using builtin-in &lt;a href=&quot;https://geth.ethereum.org/docs/install-and-build/installing-geth#ubuntu-via-ppas&quot;&gt;launchpad PPA&lt;/a&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;add-apt-repository &lt;span class=&quot;nt&quot;&gt;-y&lt;/span&gt; ppa:ethereum/ethereum&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt-get update
+&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt-get &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;ethereum
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;syncing&quot;&gt;Syncing&lt;/h3&gt;
+&lt;p&gt;To sync to the current state of the network, just run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth&lt;/code&gt; in the command line. By default, it will run a full node (using “snap” sync), which is what I did.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;A full node stores all blocks since genesis, hence all state can be derived from it.&lt;/li&gt;
+  &lt;li&gt;Alternatively, one can try syncing a light node &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth --syncmode light&lt;/code&gt;, which only stores header blocks (trust that majority are validating transactions using full nodes)&lt;/li&gt;
+  &lt;li&gt;An archival node &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth --syncmode full --gcmode archive --txlookuplimit=0 --cache.preimages&lt;/code&gt; (which is a full node but also keeps a snapshot of all intermediate, historical states at every block). In contrast to an archival node, a full node only stores recent state for faster initial sync. Once fully synced, it will store all state moving forward as in archival nodes.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;At this point, the data directory &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ethereum&lt;/code&gt; should be filling up quickly, since it is where all the historical data is saved. Restarting the node will simply pick up where it left off. Using the default settings, syncing mainnet took about 3 hours using up ~500GB of the SSD.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;In a separate terminal to the one running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth&lt;/code&gt; , running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth attach&lt;/code&gt; opens a Javascript console (by default it attaches using IPC, found in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ethereum/geth.ipc&lt;/code&gt; which exists only when the geth node is running).&lt;/li&gt;
+  &lt;li&gt;To confirm when the syncing is done, you can compute &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;eth.syncing&lt;/code&gt; within the Javascript console. If it returns &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;false&lt;/code&gt;, syncing is finished.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;json-rpc-server&quot;&gt;JSON-RPC Server&lt;/h3&gt;
+&lt;p&gt;Geth supports the standard JSON-RPC API methods via multiple so-called transport protocols: IPC, HTTP, and Websocket. I only tried the first two. More details about Geth transport options &lt;a href=&quot;https://geth.ethereum.org/docs/rpc/server&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;IPC provides unrestricted access to all method namespaces (eth, web3, net, etc.). Crucially, this only works when program is run locally on the same host as the Geth node
+    &lt;ul&gt;
+      &lt;li&gt;As a general rule, IPC is most secure because it is limited to interactions on the local machine and cannot be exposed to external traffic such as in HTTP&lt;/li&gt;
+      &lt;li&gt;The listening socket for the IPC server is placed in the data directory at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ethereum/geth.ipc&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;HTTP (RPC) is the most widely used transport for interacting with Geth. By default, it only provides access to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;eth, web3, net&lt;/code&gt; method namespaces, because enabling other APIs like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;personal&lt;/code&gt; for account management over HTTP increases the attack surface for external traffic and is therefore not recommended.
+    &lt;ul&gt;
+      &lt;li&gt;To open an HTTP server, run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth --http&lt;/code&gt; . To check that the HTTP port is open, in a separate terminal run&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;curl http://localhost:8545&lt;/code&gt; If nothing returned then HTTP connection is open, otherwise if the connection is refused then HTTP is not running.&lt;/li&gt;
+      &lt;li&gt;By default, the HTTP connection refers to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost&lt;/code&gt; with listening port 8545. Only use default &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;http.addr=localhost&lt;/code&gt; (otherwise opens access to external traffic)&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;uniswap-prices&quot;&gt;Uniswap Prices&lt;/h2&gt;
+&lt;p&gt;Now that we have an Ethereum node, we can try pulling the most up-to-date data on the blockchain, such as prices on Uniswap. I followed the &lt;a href=&quot;https://docs.uniswap.org/sdk/2.0.0/guides/quick-start&quot;&gt;Uniswap V2 SDK&lt;/a&gt;.
+My Uniswap boilerplate code below can also be found &lt;a href=&quot;https://github.com/axucar/uniswap-boilerplate&quot;&gt;on Github&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Uniswap’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fetchPairData&lt;/code&gt; method allows us to specify an HTTP API using a URL, via the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ethers.js&lt;/code&gt; module (see &lt;a href=&quot;https://docs.ethers.io/v5/api/providers/jsonrpc-provider/&quot;&gt;ethers’s JSON RPC documentation&lt;/a&gt;). Below I tried 3 different methods (Alchemy API vs. IPC vs. HTTP), and noted a 10x speed difference between running on local node vs. using third-party HTTP API (Alchemy).&lt;/p&gt;
+
+&lt;div class=&quot;language-js highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ChainId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Fetcher&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;WETH&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Route&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Trade&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;TokenAmount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;TradeType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;@uniswap/sdk&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;chainId&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ChainId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;MAINNET&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;`The chainId of Mainnet is &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;chainId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;.`&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dai_tokenAddress&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;0x6B175474E89094C44Da98b954EedeAC495271d0F&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// must be checksummed&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;usdc_tokenAddress&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// must be checksummed&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ethers&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;ethers&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;//METHOD 1: Alchemy, ~500-1000ms&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// const url = &apos;https://eth-mainnet.g.alchemy.com/v2/&amp;lt;YOUR-API-KEY&amp;gt;&apos;;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// const customProvider = new ethers.providers.JsonRpcProvider(url);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;//METHOD 2: IPC (LOCAL node machine only)&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// const url = &apos;/home/&amp;lt;user&amp;gt;/.ethereum/geth.ipc&apos;;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// const customProvider = new ethers.providers.IpcProvider(url);&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;//METHOD 3: HTTP, ~50-100ms&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;http://localhost:8545&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;customProvider&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ethers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;providers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;JsonRpcProvider&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;startTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;performance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;now&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;init&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;async&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;	
+	&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dai&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ChainId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;MAINNET&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;dai_tokenAddress&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;18&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;DAI&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Dai stablecoin&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;	
+	&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weth&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;WETH&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dai&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;chainId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+	&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weth_dai_pair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Fetcher&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;fetchPairData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dai&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;WETH&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;dai&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;chainId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;customProvider&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 		
+	&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weth_dai_route&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Route&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;weth_dai_pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//input is weth		&lt;/span&gt;
+	&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weth_dai_trade&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Trade&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;weth_dai_route&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;TokenAmount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;weth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;0.1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e18&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;TradeType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;EXACT_INPUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;	
+
+	&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;Mid Price WETH --&amp;gt; DAI:&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weth_dai_route&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;midPrice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toSignificant&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;	
+	&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;Execution Price WETH --&amp;gt; DAI:&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weth_dai_trade&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;executionPrice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toSignificant&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+	&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;Mid Price after trade WETH --&amp;gt; DAI:&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;weth_dai_trade&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;nextMidPrice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toSignificant&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;	
+	&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;endTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;performance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;now&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+	&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;repeat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+	&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;`Call to Uniswap took &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;endTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;startTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; milliseconds`&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To run the above, I installed Javascript via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nvm&lt;/code&gt;. Then installed node.js version 16&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nvm install 16&lt;/code&gt; then &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nvm use 16&lt;/code&gt;. So ultimately &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;which node&lt;/code&gt; for me points to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/home/&amp;lt;username&amp;gt;/.nvm/versions/node/v16.13.1/bin/node&lt;/code&gt; . Also, the Uniswap script required &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;npm install @uniswap/sdk&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;npm install ethers&lt;/code&gt;. Now, running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;node test-uniswap-sdk.js&lt;/code&gt; should give something like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;The chainId of Mainnet is 1.
+Mid Price WETH --&amp;gt; DAI: 1650.63
+Execution Price WETH --&amp;gt; DAI: 1645.65
+Mid Price after trade WETH --&amp;gt; DAI: 1650.56
+---------------------------------------------
+Call to Uniswap took 69.21298998594284 milliseconds
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;setting-up-ssh&quot;&gt;Setting up SSH&lt;/h2&gt;
+&lt;p&gt;I also have a laptop (running Ubuntu) from which I want to access the NUC’s files and ultimately the Geth node. In terms of accessing the NUC’s files, one can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh&lt;/code&gt; , see &lt;a href=&quot;https://ubuntu.com/server/docs/service-openssh&quot;&gt;OpenSSH on Ubuntu documentation&lt;/a&gt; which walks through installation of the OpenSSH client and server application.&lt;/p&gt;
+
+&lt;p&gt;As first step, we need to get the IP address of the remote server (the NUC’s IP in this case).&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ip addr show|grep &lt;span class=&quot;s2&quot;&gt;&quot;inet &quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;For instance, an IP address may have the form 192.168.x.xxx. On client (laptop) I would enter &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh nuc_username@192.168.x.xxx&lt;/code&gt;, where the username is that of the server (NUC). After being prompted for the remote host’s password, you can now access those remote files! You will notice terminal now says &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nuc_username@server_name&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;To do SSH without password:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;generate ssh keys on my client (laptop) via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh-keygen -t rsa -b 4096&lt;/code&gt; , which saves &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ssh/id_rsa.pub&lt;/code&gt; (public key) and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ssh/id_rsa&lt;/code&gt; (private key) respectively. Then, we copy the public key to the remote host (in this case my NUC) via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh-copy-id nuc_username@192.168.x.xxx&lt;/code&gt; (ie. nuc_username@remotehostIP)&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;this will copy all the public keys in ~/.ssh/ into the remote host’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.ssh/authorized_keys&lt;/code&gt; file. Of course, this prompts for a password. When it’s done, no password will be required anymore. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;exit&lt;/code&gt; will log you out of the ssh’ed terminal&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;For other basic ssh commands on Ubuntu, see &lt;a href=&quot;https://www.ssh.com/academy/ssh/command&quot;&gt;this page&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;ssh-tunneling-local-port-forwarding&quot;&gt;SSH Tunneling (Local Port Forwarding)&lt;/h3&gt;
+&lt;p&gt;While the SSH has been setup, this still requires me to have my Uniswap script on the NUC and run against the Geth node once SSH’ed into the remote host. However, say I want to run the Uniswap boilerplate &lt;a href=&quot;#uniswap-on-chain-pricing&quot;&gt;above&lt;/a&gt;, but using the local environment on my laptop (e.g. boilerplate script only exists on my laptop). Notice that the HTTP JSON-RPC provider parameter &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;const url = &apos;http://localhost:8545&apos;&lt;/code&gt; when running the Uniswap script on the NUC. I can tunnel some port on the laptop (say port 3333) to the default Geth port on my NUC (port 8545), and query the Geth node as if the node was running on my laptop.&lt;/p&gt;
+
+&lt;p&gt;Local forwarding allows forwarding a port from a client machine (my laptop) to the server machine (NUC). 
+See this &lt;a href=&quot;https://www.ssh.com/academy/ssh/tunneling/example&quot;&gt;page&lt;/a&gt; for an explanation.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ssh &lt;span class=&quot;nt&quot;&gt;-L&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;LOCAL_IP:] LOCAL_PORT:DESTINATION:DESTINATION_PORT USER@SSH_SERVER
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In my case, running the following command on my laptop opens a connection to the remote host (NUC) and forwards the connection from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost:8545&lt;/code&gt; on the NUC to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost:3333&lt;/code&gt; on my laptop.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ssh &lt;span class=&quot;nt&quot;&gt;-L&lt;/span&gt; localhost:3333:localhost:8545 nuc_username@192.168.x.xxx&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now, even though my laptop is not running Geth, I can connect to the NUC’s geth node via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost:3333&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-js highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//Now I can connect to the NUC&apos;s geth node from my laptop!&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;http://localhost:3333&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;customProvider&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;ethers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;providers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;JsonRpcProvider&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content>
+
+      
+      
+      
+      
+      
+
+      
+
+      
+
+      
+
+      
+        <summary type="html">Behind major Ethereum applications, such as OpenSea for NFTs and dYdX for trading, there is usually a “blockchain developer platform” (e.g. Alchemy, QuickNode, Infura) that acts as an API layer to interact with any given blockchain network. For instance, to pull Uniswap on-chain price for WETH-USDC, I can get an API key from Alchemy and use Uniswap’s SDK (example below).</summary>
+      
+
+      
+      
+    </entry>
+  
   
   
     <entry>
