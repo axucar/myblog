@@ -5,7 +5,7 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-08-03T23:15:02+00:00</updated>
+  <updated>2022-09-04T19:12:44+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
@@ -30,7 +30,19 @@
       <published>2022-08-03T00:00:00+00:00</published>
       <updated>2022-08-03T00:00:00+00:00</updated>
       <id>https://axucar.ca/2022/08/03/running-geth-node</id>
-      <content type="html" xml:base="https://axucar.ca/2022/08/03/running-geth-node/">&lt;p&gt;Behind major Ethereum applications, such as OpenSea for NFTs and dYdX for trading, there is usually a “blockchain developer platform” (e.g. Alchemy, QuickNode, Infura) that acts as an API layer to interact with any given blockchain network. For instance, to pull Uniswap on-chain price for WETH-USDC, I can get an API key from Alchemy and use Uniswap’s SDK (example &lt;a href=&quot;#uniswap-on-chain-pricing&quot;&gt;below&lt;/a&gt;).&lt;/p&gt;
+      <content type="html" xml:base="https://axucar.ca/2022/08/03/running-geth-node/">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#get-started-with-geth&quot; id=&quot;markdown-toc-get-started-with-geth&quot;&gt;Get started with Geth&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#syncing&quot; id=&quot;markdown-toc-syncing&quot;&gt;Syncing&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#json-rpc-server&quot; id=&quot;markdown-toc-json-rpc-server&quot;&gt;JSON-RPC Server&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#uniswap-prices&quot; id=&quot;markdown-toc-uniswap-prices&quot;&gt;Uniswap Prices&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#setting-up-ssh&quot; id=&quot;markdown-toc-setting-up-ssh&quot;&gt;Setting up SSH&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#ssh-tunneling-local-port-forwarding&quot; id=&quot;markdown-toc-ssh-tunneling-local-port-forwarding&quot;&gt;SSH Tunneling (Local Port Forwarding)&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Behind major Ethereum applications, such as OpenSea for NFTs and dYdX for trading, there is usually a “blockchain developer platform” (e.g. Alchemy, QuickNode, Infura) that acts as an API layer to interact with any given blockchain network. For instance, to pull Uniswap on-chain price for WETH-USDC, I can get an API key from Alchemy and use Uniswap’s SDK (example &lt;a href=&quot;#uniswap-on-chain-pricing&quot;&gt;below&lt;/a&gt;).&lt;/p&gt;
 
 &lt;p&gt;However, in the spirit of learning, I was curious how to run a local Ethereum node instead. I used a NUC (Intel  i7 9700, 32GB RAM, 2TB SSD, Ubuntu). In particular, the Go Ethereum (Geth) client seemed like the easiest one to get started with. Note that for the sake of client diversity for the Ethereum network, it is recommended to use other client implementations since Geth is by far the most popular at this point (for instance, OpenEthereum or Nethermind).&lt;/p&gt;
 
@@ -207,7 +219,15 @@ See this &lt;a href=&quot;https://www.ssh.com/academy/ssh/tunneling/example&quot
       <published>2022-04-26T00:00:00+00:00</published>
       <updated>2022-04-26T00:00:00+00:00</updated>
       <id>https://axucar.ca/2022/04/26/create-jekyll-blog</id>
-      <content type="html" xml:base="https://axucar.ca/2022/04/26/create-jekyll-blog/">&lt;p&gt;I wanted to create a personal page that was easy to maintain in markdown and 
+      <content type="html" xml:base="https://axucar.ca/2022/04/26/create-jekyll-blog/">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#installation&quot; id=&quot;markdown-toc-installation&quot;&gt;Installation&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#using-jekyll&quot; id=&quot;markdown-toc-using-jekyll&quot;&gt;Using Jekyll&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#github-pages&quot; id=&quot;markdown-toc-github-pages&quot;&gt;Github Pages&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#custom-domain&quot; id=&quot;markdown-toc-custom-domain&quot;&gt;Custom Domain&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I wanted to create a personal page that was easy to maintain in markdown and 
 quick to set up. I came across and was inspired by Andrej Karpathy’s simple Jekyll &lt;a href=&quot;http://karpathy.github.io/2014/07/01/switching-to-jekyll/&quot;&gt;blog&lt;/a&gt;&lt;/p&gt;
 
 &lt;h2 id=&quot;installation&quot;&gt;Installation&lt;/h2&gt;
