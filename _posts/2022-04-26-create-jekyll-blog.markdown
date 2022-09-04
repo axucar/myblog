@@ -4,6 +4,8 @@ title:  "Creating this blog"
 date:   2022-04-26 
 categories: 
 ---
+* TOC
+{:toc}
 I wanted to create a personal page that was easy to maintain in markdown and 
 quick to set up. I came across and was inspired by Andrej Karpathy's simple Jekyll [blog](http://karpathy.github.io/2014/07/01/switching-to-jekyll/) 
 

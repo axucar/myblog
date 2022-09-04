@@ -4,6 +4,8 @@ title:  "Uniswap, Geth, SSH"
 date:   2022-08-03
 categories: 
 ---
+* TOC 
+{:toc}
 Behind major Ethereum applications, such as OpenSea for NFTs and dYdX for trading, there is usually a “blockchain developer platform” (e.g. Alchemy, QuickNode, Infura) that acts as an API layer to interact with any given blockchain network. For instance, to pull Uniswap on-chain price for WETH-USDC, I can get an API key from Alchemy and use Uniswap’s SDK (example [below](#uniswap-on-chain-pricing)).
 
 However, in the spirit of learning, I was curious how to run a local Ethereum node instead. I used a NUC (Intel  i7 9700, 32GB RAM, 2TB SSD, Ubuntu). In particular, the Go Ethereum (Geth) client seemed like the easiest one to get started with. Note that for the sake of client diversity for the Ethereum network, it is recommended to use other client implementations since Geth is by far the most popular at this point (for instance, OpenEthereum or Nethermind). 
