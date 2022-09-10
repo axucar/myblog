@@ -6,9 +6,8 @@ categories:
 ---
 * TOC 
 {:toc}
-
-Below are my notes on how [Foundry](https://book.getfoundry.sh/) deploys and interacts with Ethereum contracts, illustrated by solving a simple Solidity challenge.
-(add summary of everything below SQPT style).
+Below are my notes on how I used [Foundry](https://book.getfoundry.sh/) to deploy and interact with Ethereum contracts, illustrated by solving a simple Solidity challenge on the Goerli testnet.
+Specifically, it covers the basic setup of testing locally using a forked environment at a specific block, deploying using `Forge`, calling the deployed contract using `Cast`, and signing a message off-chain claiming the work was ours.
 
 ## Foundry
 
