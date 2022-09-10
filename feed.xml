@@ -5,11 +5,11 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-09-10T04:47:37+00:00</updated>
+  <updated>2022-09-10T05:39:01+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
-    <title type="html">Carlos</title>
+    <title type="html">Carlos Xu</title>
   
 
   
@@ -40,9 +40,8 @@
   &lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;#using-cast-to-read--interact--sign&quot; id=&quot;markdown-toc-using-cast-to-read--interact--sign&quot;&gt;Using Cast to Read + Interact + Sign&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
-
-&lt;p&gt;Below are my notes on how &lt;a href=&quot;https://book.getfoundry.sh/&quot;&gt;Foundry&lt;/a&gt; deploys and interacts with Ethereum contracts, illustrated by solving a simple Solidity challenge.
-(add summary of everything below SQPT style).&lt;/p&gt;
+&lt;p&gt;Below are my notes on how I used &lt;a href=&quot;https://book.getfoundry.sh/&quot;&gt;Foundry&lt;/a&gt; to deploy and interact with Ethereum contracts, illustrated by solving a simple Solidity challenge on the Goerli testnet.
+Specifically, it covers the basic setup of testing locally using a forked environment at a specific block, deploying using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Forge&lt;/code&gt;, calling the deployed contract using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Cast&lt;/code&gt;, and signing a message off-chain claiming the work was ours.&lt;/p&gt;
 
 &lt;h2 id=&quot;foundry&quot;&gt;Foundry&lt;/h2&gt;
 
@@ -303,6 +302,8 @@ Thus, the above suffices to prove that the owner of the private key for &lt;code
 
       
 
+      
+        <summary type="html">Below are my notes on how I used Foundry to deploy and interact with Ethereum contracts, illustrated by solving a simple Solidity challenge on the Goerli testnet. Specifically, it covers the basic setup of testing locally using a forked environment at a specific block, deploying using Forge, calling the deployed contract using Cast, and signing a message off-chain claiming the work was ours.</summary>
       
 
       
