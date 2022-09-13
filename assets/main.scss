@@ -1,0 +1,13 @@
+---
+---
+///imports gems/gems/jekyll-whiteglass-1.11.1/assets/main.scss ?
+///bundle show whiteglass: /gems/gems/jekyll-whiteglass-1.11.1
+/// 
+/// i think: <gem_path>/assets/main.scss -> <gem_path>/_sass/whiteglass.scss -> <gem_path>/_sass/whiteglass/base + layout + syntax highlight
+
+@import "whiteglass"; 
+
+ul#markdown-toc {
+    list-style:none;
+    margin-left: 0px;
+}
