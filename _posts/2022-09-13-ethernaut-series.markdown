@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Completing Ethernaut Series: Part I"
+title:  "Ethernaut Series: Part I"
 date:   2022-09-13
 categories: 
 ---
