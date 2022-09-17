@@ -32,3 +32,5 @@ Books
 - Book of Why -- Judea Pearl
 - Godel’s Proof -- Ernest Nagel
 - Meditations -- Marcus Aurelius
+- History of the Peloponnesian War - Thucydides
+
