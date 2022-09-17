@@ -19,6 +19,7 @@
 # in the templates via {{ site.myvariable }}.
 
 title: Carlos Xu
+author: Carlos Xu
 email: firstnamelastname2017@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
  Welcome to my blog! 
