@@ -5,7 +5,7 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-09-16T01:57:24+00:00</updated>
+  <updated>2022-09-17T06:40:31+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
@@ -16,6 +16,12 @@
     <subtitle>Welcome to my blog! </subtitle>
   
 
+  
+    <author>
+        <name>Carlos Xu</name>
+      
+      
+    </author>
   
 
   
@@ -702,6 +708,12 @@ It is the keccak256 hash of “eip1967.proxy.implementation” minus 1
       
 
       
+        <author>
+            <name>Carlos Xu</name>
+          
+          
+        </author>
+      
 
       
 
@@ -1268,6 +1280,12 @@ For &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;gateTwo()
       
 
       
+        <author>
+            <name>Carlos Xu</name>
+          
+          
+        </author>
+      
 
       
 
@@ -1560,6 +1578,12 @@ Thus, the above suffices to prove that the owner of the private key for &lt;code
       
 
       
+        <author>
+            <name>Carlos Xu</name>
+          
+          
+        </author>
+      
 
       
 
@@ -1749,6 +1773,12 @@ See this &lt;a href=&quot;https://www.ssh.com/academy/ssh/tunneling/example&quot
       
 
       
+        <author>
+            <name>Carlos Xu</name>
+          
+          
+        </author>
+      
 
       
 
@@ -1897,6 +1927,12 @@ sufficient &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;us
       
       
 
+      
+        <author>
+            <name>Carlos Xu</name>
+          
+          
+        </author>
       
 
       
