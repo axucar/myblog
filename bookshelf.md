@@ -33,4 +33,4 @@ Books
 - Godel’s Proof -- Ernest Nagel
 - Meditations -- Marcus Aurelius
 - History of the Peloponnesian War - Thucydides
-
+- Snow Crash -- Neal Stephenson
