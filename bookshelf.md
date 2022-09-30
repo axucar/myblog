@@ -34,3 +34,6 @@ Books
 - Meditations -- Marcus Aurelius
 - History of the Peloponnesian War - Thucydides
 - Snow Crash -- Neal Stephenson
+
+Miscellaneous
+- [Learn X in Y minutes](https://learnxinyminutes.com/)
