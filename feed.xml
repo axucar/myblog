@@ -5,7 +5,7 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-10-06T18:07:07+00:00</updated>
+  <updated>2022-10-20T17:17:47+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
@@ -223,9 +223,9 @@ Status: active
 &lt;p&gt;For debugging purposes, your public IP address can be found via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;curl v4.ident.me&lt;/code&gt;, while private IP address can be found via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ifconfig|grep &quot;inet &quot;|grep -v 127.0.0.1&lt;/code&gt;.&lt;/p&gt;
 
 &lt;h2 id=&quot;autossh&quot;&gt;Autossh&lt;/h2&gt;
-&lt;p&gt;Once I had my node synced on the host (my NUC), I wanted to SSH tunnel the host’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost:8545&lt;/code&gt; to my laptop. To keep an SSH tunnel (between host and my laptop) continuously running, I used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;autossh&lt;/code&gt;, which restarts whenever the tunnels drops. On my laptop, I run&lt;/p&gt;
+&lt;p&gt;Once I had my node synced on the host (my NUC), I wanted to SSH tunnel the host’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost:8545&lt;/code&gt; (default HTTP listening port) and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;localhost:8546&lt;/code&gt; (default Websocket port) to my laptop. To keep an SSH tunnel (between host and my laptop) continuously running, I used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;autossh&lt;/code&gt;, which restarts whenever the tunnels drops. On my laptop, I run&lt;/p&gt;
 
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;autossh -f -N -M 20000 -L localhost:3333:localhost:8545 nuc_username@192.168.1.xxx&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;autossh -f -N -M 20000 -L localhost:3333:localhost:8545 -L localhost:3334:localhost:8546 nuc_username@192.168.1.xxx&lt;/code&gt;&lt;/p&gt;
 
 &lt;p&gt;where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;192.168.1.xxx&lt;/code&gt; is the private IP address of the NUC, running the Docker script above. Note that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-N&lt;/code&gt; switch was necessary for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-f&lt;/code&gt; switch to also work (which keeps the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;autossh&lt;/code&gt; process in the background). The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-M&lt;/code&gt; flag specifies the monitoring port (echo port is set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;monitoring_port&lt;/code&gt;+1), ie. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;autossh&lt;/code&gt; will send test data on port 20000 and receive it back on 20001.&lt;/p&gt;</content>
 

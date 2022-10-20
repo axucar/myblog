@@ -284,9 +284,9 @@ Status: active
 <p>For debugging purposes, your public IP address can be found via <code class="language-plaintext highlighter-rouge">curl v4.ident.me</code>, while private IP address can be found via <code class="language-plaintext highlighter-rouge">ifconfig|grep "inet "|grep -v 127.0.0.1</code>.</p>
 
 <h2 id="autossh">Autossh</h2>
-<p>Once I had my node synced on the host (my NUC), I wanted to SSH tunnel the host’s <code class="language-plaintext highlighter-rouge">localhost:8545</code> to my laptop. To keep an SSH tunnel (between host and my laptop) continuously running, I used <code class="language-plaintext highlighter-rouge">autossh</code>, which restarts whenever the tunnels drops. On my laptop, I run</p>
+<p>Once I had my node synced on the host (my NUC), I wanted to SSH tunnel the host’s <code class="language-plaintext highlighter-rouge">localhost:8545</code> (default HTTP listening port) and <code class="language-plaintext highlighter-rouge">localhost:8546</code> (default Websocket port) to my laptop. To keep an SSH tunnel (between host and my laptop) continuously running, I used <code class="language-plaintext highlighter-rouge">autossh</code>, which restarts whenever the tunnels drops. On my laptop, I run</p>
 
-<p><code class="language-plaintext highlighter-rouge">autossh -f -N -M 20000 -L localhost:3333:localhost:8545 nuc_username@192.168.1.xxx</code></p>
+<p><code class="language-plaintext highlighter-rouge">autossh -f -N -M 20000 -L localhost:3333:localhost:8545 -L localhost:3334:localhost:8546 nuc_username@192.168.1.xxx</code></p>
 
 <p>where <code class="language-plaintext highlighter-rouge">192.168.1.xxx</code> is the private IP address of the NUC, running the Docker script above. Note that the <code class="language-plaintext highlighter-rouge">-N</code> switch was necessary for the <code class="language-plaintext highlighter-rouge">-f</code> switch to also work (which keeps the <code class="language-plaintext highlighter-rouge">autossh</code> process in the background). The <code class="language-plaintext highlighter-rouge">-M</code> flag specifies the monitoring port (echo port is set to <code class="language-plaintext highlighter-rouge">monitoring_port</code>+1), ie. <code class="language-plaintext highlighter-rouge">autossh</code> will send test data on port 20000 and receive it back on 20001.</p>
 
