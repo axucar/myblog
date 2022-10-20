@@ -168,8 +168,8 @@ After configuring the router, you can check that the port forwarding has been do
 For debugging purposes, your public IP address can be found via `curl v4.ident.me`, while private IP address can be found via `ifconfig|grep "inet "|grep -v 127.0.0.1`.
 
 ## Autossh
-Once I had my node synced on the host (my NUC), I wanted to SSH tunnel the host's `localhost:8545` to my laptop. To keep an SSH tunnel (between host and my laptop) continuously running, I used `autossh`, which restarts whenever the tunnels drops. On my laptop, I run
+Once I had my node synced on the host (my NUC), I wanted to SSH tunnel the host's `localhost:8545` (default HTTP listening port) and `localhost:8546` (default Websocket port) to my laptop. To keep an SSH tunnel (between host and my laptop) continuously running, I used `autossh`, which restarts whenever the tunnels drops. On my laptop, I run
 
-`autossh -f -N -M 20000 -L localhost:3333:localhost:8545 nuc_username@192.168.1.xxx`
+`autossh -f -N -M 20000 -L localhost:3333:localhost:8545 -L localhost:3334:localhost:8546 nuc_username@192.168.1.xxx`
 
 where `192.168.1.xxx` is the private IP address of the NUC, running the Docker script above. Note that the `-N` switch was necessary for the `-f` switch to also work (which keeps the `autossh` process in the background). The `-M` flag specifies the monitoring port (echo port is set to `monitoring_port`+1), ie. `autossh` will send test data on port 20000 and receive it back on 20001.
