@@ -28,6 +28,9 @@ url: "https://axucar.ca" # the base hostname & protocol for your site, e.g. http
 twitter_username: jekyllrb
 github_username:  jekyll
 
+# Google Analytics
+google_analytics: G-N1HZQHWCY2
+
 # Build settings
 markdown: kramdown
 
