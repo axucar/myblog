@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  
+  
+  <title>Flash Loans for Arbitrage</title>
+  <meta name="description" content="Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, where users can borrow unlimited amounts without collateral but must return funds within the same transaction. Predictably, flash loans have been applied towards arbitrage opportunities in automated market makers (AMMs, ie. protocols that facilitate trading through liquidity pools, instead of traditional order books). Below we demonstrate a minimal prototype of such technique.">
+  
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="https://axucar.ca/2022/11/29/flashloanswap/">
+  
+  
+  <link rel="alternate" type="application/rss+xml" title="Carlos Xu" href="https://axucar.ca/feed.xml">
+
+  <script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  },
+  svg: {
+    fontCache: 'global'
+  }
+};
+</script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+</script>
+
+<!-- SEO tags -->
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Flash Loans for Arbitrage | Carlos Xu</title>
+<meta name="generator" content="Jekyll v4.2.2" />
+<meta property="og:title" content="Flash Loans for Arbitrage" />
+<meta name="author" content="Carlos Xu" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, where users can borrow unlimited amounts without collateral but must return funds within the same transaction. Predictably, flash loans have been applied towards arbitrage opportunities in automated market makers (AMMs, ie. protocols that facilitate trading through liquidity pools, instead of traditional order books). Below we demonstrate a minimal prototype of such technique." />
+<meta property="og:description" content="Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, where users can borrow unlimited amounts without collateral but must return funds within the same transaction. Predictably, flash loans have been applied towards arbitrage opportunities in automated market makers (AMMs, ie. protocols that facilitate trading through liquidity pools, instead of traditional order books). Below we demonstrate a minimal prototype of such technique." />
+<link rel="canonical" href="https://axucar.ca/2022/11/29/flashloanswap/" />
+<meta property="og:url" content="https://axucar.ca/2022/11/29/flashloanswap/" />
+<meta property="og:site_name" content="Carlos Xu" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-11-29T00:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Flash Loans for Arbitrage" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Carlos Xu"},"dateModified":"2022-11-29T00:00:00+00:00","datePublished":"2022-11-29T00:00:00+00:00","description":"Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, where users can borrow unlimited amounts without collateral but must return funds within the same transaction. Predictably, flash loans have been applied towards arbitrage opportunities in automated market makers (AMMs, ie. protocols that facilitate trading through liquidity pools, instead of traditional order books). Below we demonstrate a minimal prototype of such technique.","headline":"Flash Loans for Arbitrage","mainEntityOfPage":{"@type":"WebPage","@id":"https://axucar.ca/2022/11/29/flashloanswap/"},"url":"https://axucar.ca/2022/11/29/flashloanswap/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<!-- Google Analytics tracking ID -->
+
+
+
+  
+  <meta property="og:title" content="Flash Loans for Arbitrage">
+  <meta property="og:site_name" content="Carlos Xu">
+  <meta property="og:url" content="https://axucar.ca/2022/11/29/flashloanswap/">
+  <meta property="og:description" content="Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, where users can borrow unlimited amounts without collateral but must return funds within the same transaction. Predictably, flash loans have been applied towards arbitrage opportunities in automated market makers (AMMs, ie. protocols that facilitate trading through liquidity pools, instead of traditional order books). Below we demonstrate a minimal prototype of such technique.">
+  
+  
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="jekyllrb">
+  <meta name="twitter:title" content="Flash Loans for Arbitrage">
+  <meta name="twitter:description" content="Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, wh...">
+  
+    <meta name="twitter:creator" content="jekyllrb">
+  
+  
+
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
+
+  
+  
+  
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N1HZQHWCY2"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-N1HZQHWCY2');
+    </script>
+  
+
+
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">Carlos Xu</a>
+
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/posts/">Posts</a>
+      
+        
+        <a class="page-link" href="/bookshelf/">Bookshelf</a>
+      
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    
+      <h1 class="post-title" itemprop="name headline">Flash Loans for Arbitrage</h1>
+    
+    <p class="post-meta"><time datetime="2022-11-29T00:00:00+00:00" itemprop="datePublished">Nov 29, 2022</time></p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <ul id="markdown-toc">
+  <li><a href="#uni-weth-lp" id="markdown-toc-uni-weth-lp">UNI-WETH LP</a></li>
+  <li><a href="#amm-math" id="markdown-toc-amm-math">AMM Math</a></li>
+  <li><a href="#calculate-arb-profit" id="markdown-toc-calculate-arb-profit">Calculate Arb Profit</a></li>
+  <li><a href="#solidity-contract" id="markdown-toc-solidity-contract">Solidity Contract</a>    <ul>
+      <li><a href="#deploy" id="markdown-toc-deploy">Deploy</a></li>
+    </ul>
+  </li>
+  <li><a href="#test-arb--15951518" id="markdown-toc-test-arb--15951518">Test Arb @ 15951518</a></li>
+  <li><a href="#closing-thoughts" id="markdown-toc-closing-thoughts">Closing thoughts</a></li>
+</ul>
+<p>Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, where users can borrow unlimited amounts without collateral but must return funds within the same transaction. Predictably, flash loans have been applied towards arbitrage opportunities in automated market makers (AMMs, ie. protocols that facilitate trading through liquidity pools, instead of traditional order books). Below we demonstrate a minimal prototype of such technique.</p>
+
+<h2 id="uni-weth-lp">UNI-WETH LP</h2>
+
+<p>On-chain arbitrage can generally be found during periods of high price volatility, and this month saw the market-moving events of FTX’s insolvency on Nov. 11, 2022. Within hours of filing for bankruptcy, FTX had also mysteriously been hacked. The FTX drainer account had swapped UNI tokens, among other stolen assets, for WETH across various AMMs including Uniswap V2, V3, and CoW protocols (see <a href="https://etherscan.io/tx/0xc5475d0026b74e567ba9fe6b2301e8c8760bcc27670a3fe3e5c984fb3568d153">etherscan</a>) at block <a href="https://etherscan.io/block/15951518">15951518</a>. Subsequently, we ought to observe imbalances in the reserves across liquidity pools for UNI-WETH.</p>
+
+<p>For simplicity, we focus only on Uniswap and Sushiswap liquidity pools (LPs) to spot an arbitrage, since the contract of the latter is just a fork of the former.</p>
+
+<ul>
+  <li>Uniswap UNI-WETH LP <code class="language-plaintext highlighter-rouge">0xd3d2E2692501A5c9Ca623199D38826e513033a17</code></li>
+  <li>Sushiswap UNI-WETH LP <code class="language-plaintext highlighter-rouge">0xDafd66636E2561b0284EDdE37e42d192F2844D40</code></li>
+</ul>
+
+<hr />
+
+<p><strong>UNI Reserves</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: right">Block</th>
+      <th style="text-align: right">Uniswap</th>
+      <th style="text-align: right">Sushiswap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: right">15951517</td>
+      <td style="text-align: right">1,482,000</td>
+      <td style="text-align: right">19,050</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951518</td>
+      <td style="text-align: right">1,863,000</td>
+      <td style="text-align: right">25,090</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<p><strong>WETH Reserves</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: right">Block</th>
+      <th style="text-align: right">Uniswap</th>
+      <th style="text-align: right">Sushiswap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: right">15951517</td>
+      <td style="text-align: right">6,683.0</td>
+      <td style="text-align: right">85.98</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951518</td>
+      <td style="text-align: right">5,324.0</td>
+      <td style="text-align: right">65.33</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<p><strong>UNI/WETH Reserves</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: right">Block</th>
+      <th style="text-align: right">Uniswap</th>
+      <th style="text-align: right">Sushiswap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: right">15951517</td>
+      <td style="text-align: right">221.7</td>
+      <td style="text-align: right">221.5</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951518</td>
+      <td style="text-align: right">350.0</td>
+      <td style="text-align: right">384.0</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<p>The ratio of UNI tokens vs. WETH (wrapped ether) significantly increased across both Uniswap and Sushiswap pools (221.7, 221.5 → 350, 384) respectively on block 15951518 vs. the previous block. While the ratio in the previous block was nearly inline, the reserve ratios at the block in which the FTX drainer dumped UNI tokens have diverged between the two LPs. Note that 350 vs. 384 is a significant deviation relative to the 30bps of swap fees that we have to pay to each LP to trade this, whereas 221.7 vs. 221.5 is not.</p>
+
+<p>Sushiswap has an abundance of UNI tokens relative to Uniswap, so the arbitrage outline would be:</p>
+<ol>
+  <li>Borrow WETH from Uniswap LP</li>
+  <li>Swap WETH for UNI on Sushiswap LP (where UNI is cheap)</li>
+  <li>Repay the loan from Uniswap LP using the UNI we receive from Sushiswap. Keep the difference (profit) in UNI tokens</li>
+</ol>
+
+<h2 id="amm-math">AMM Math</h2>
+
+<p>We derive two formulas needed to calculate the arbitrage profit: 1) compute the output of a swap given an input amount, and 2) compute the required input of a swap, given a desired output. They should match Uniswap’s reference implemention of these functions in Solidity <a href="https://github.com/Uniswap/v2-periphery/blob/master/contracts/libraries/UniswapV2Library.sol#L43-L59">here</a>.</p>
+
+<p>Uniswap follows the constant product formula for pricing, where the product of the two reserve quantities remains constant across swaps. Mathematically, this means $(r_{out}-x_{out})(r_{in}+x_{in}) = r_{out}*r_{in} = k$, where $r$, $x$ represent the reserves and the amounts being swapped, respectively, and $k$ is a constant.</p>
+
+<ol>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">getAmountOut(amountIn, reserveIn, reserveOut)</code> : $x_{out} = f(x_{in}, r_{in}, r_{out})$</p>
+
+    <p>Given an input amount and pair reserves, this function returns the maximum we can swap out. We will call this function on Sushiswap LP, where we will input WETH, and swap out UNI. So $r_{in}, r_{out}$ would be the reserves of WETH and UNI respectively, $x_{out}$ be the maximum amount of UNI we can take out of the pool, and $x_{in}$ be the amount of WETH we supply to the Sushiswap pool. We need to solve for $x_{out}$.</p>
+
+\[(r_{out}-x_{out})(r_{in}+x_{in}) = r_{out}*r_{in} = k\]
+
+\[=&gt; x_{out} = r_{out} - \frac{r_{in}*r_{out}}{r_{in} + x_{in}} = \frac{r_{out}*x_{in}}{r_{in}+x_{in}}\]
+
+    <p>However, there is a 0.3%=3/1000 fee applied on each swap, which is taken directly from the input amount $x_{in}$ of the “in” token. So with the fee applied on $x_{in}$ we have:</p>
+
+\[x_{out} = \frac{r_{out}*0.997*x_{in}}{r_{in}+0.997*x_{in}} = \frac{r_{out}*x_{in}*997}{r_{in}*1000+x_{in}*997}\]
+
+    <p>In Python (see <code class="language-plaintext highlighter-rouge">lp_wrapper.py</code> on <a href="https://github.com/axucar/flashloan-swap/blob/main/lp_wrapper.py">Github</a>), with <code class="language-plaintext highlighter-rouge">self.fee = Fraction(3,1000)</code>:</p>
+    <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## lp_wrapper.py
+</span><span class="k">def</span> <span class="nf">get_amount_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_in_address</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">amount_in</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>        
+ <span class="k">assert</span> <span class="n">token_in_address</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">token0</span><span class="p">.</span><span class="n">address</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">token1</span><span class="p">.</span><span class="n">address</span><span class="p">),</span> <span class="s">"Provided token_in does not match LP tokens"</span>
+
+ <span class="p">(</span><span class="n">reserve_in</span><span class="p">,</span> <span class="n">reserve_out</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">reserve_token0</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">reserve_token1</span><span class="p">)</span> \
+         <span class="k">if</span> <span class="p">(</span><span class="n">token_in_address</span> <span class="o">==</span> <span class="bp">self</span><span class="p">.</span><span class="n">token0</span><span class="p">.</span><span class="n">address</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">reserve_token1</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">reserve_token0</span><span class="p">)</span> 
+    
+ <span class="n">amount_in_with_fee</span> <span class="o">=</span> <span class="n">amount_in</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">fee</span><span class="p">.</span><span class="n">denominator</span> <span class="o">-</span> <span class="bp">self</span><span class="p">.</span><span class="n">fee</span><span class="p">.</span><span class="n">numerator</span><span class="p">)</span>
+ <span class="n">numerator</span> <span class="o">=</span> <span class="n">amount_in_with_fee</span> <span class="o">*</span> <span class="n">reserve_out</span>
+ <span class="n">denominator</span> <span class="o">=</span> <span class="n">reserve_in</span> <span class="o">*</span> <span class="bp">self</span><span class="p">.</span><span class="n">fee</span><span class="p">.</span><span class="n">denominator</span> <span class="o">+</span> <span class="n">amount_in_with_fee</span>
+ <span class="k">return</span> <span class="n">numerator</span> <span class="o">//</span> <span class="n">denominator</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p><code class="language-plaintext highlighter-rouge">getAmountIn(amountOut, reserveIn, reserveOut)</code>: $x_{in} = g(x_{out}, r_{in}, r_{out})$</p>
+
+    <p>Given a desired output amount and the corresponding reserves, this function returns the minimum amount of input $x_{in}$ that must be paid in exchange for $x_{out}$ of the asset we swap out of the pool.</p>
+
+    <p>We will call this function to calculate the amount of UNI to repay on Uniswap for having borrowed WETH. Using the constant product formula for AMMs as above, we solve for the required $x_{in}$ amount.</p>
+
+\[(r_{out}-x_{out})(r_{in}+x_{in}) = r_{out}*r_{in} = k\]
+
+\[x_{in} = \frac{r_{out}r_{in}}{r_{out} - x_{out}} - r_{in} = \frac{r_{in}x_{out}}{r_{out} - x_{out}}\]
+
+    <p>Adjusting for the 0.3% fees deducted from $x_{in}$,</p>
+
+\[x_{in} = \frac{r_{in}x_{out}*1000}{(r_{out} - x_{out})*997}\]
+  </li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## lp_wrapper.py
+</span><span class="k">def</span> <span class="nf">get_amount_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token_in_address</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">amount_out</span><span class="p">:</span><span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>    
+    <span class="k">assert</span> <span class="n">token_in_address</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">token0</span><span class="p">.</span><span class="n">address</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">token1</span><span class="p">.</span><span class="n">address</span><span class="p">),</span> <span class="s">"Provided token_in does not match LP tokens"</span>
+
+    <span class="p">(</span><span class="n">reserve_in</span><span class="p">,</span> <span class="n">reserve_out</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">reserve_token0</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">reserve_token1</span><span class="p">)</span> \
+            <span class="k">if</span> <span class="p">(</span><span class="n">token_in_address</span> <span class="o">==</span> <span class="bp">self</span><span class="p">.</span><span class="n">token0</span><span class="p">.</span><span class="n">address</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">reserve_token1</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">reserve_token0</span><span class="p">)</span> 
+
+    <span class="n">numerator</span> <span class="o">=</span> <span class="n">reserve_in</span> <span class="o">*</span> <span class="n">amount_out</span> <span class="o">*</span> <span class="bp">self</span><span class="p">.</span><span class="n">fee</span><span class="p">.</span><span class="n">denominator</span>
+    <span class="n">denominator</span> <span class="o">=</span> <span class="p">(</span><span class="n">reserve_out</span> <span class="o">-</span> <span class="n">amount_out</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">fee</span><span class="p">.</span><span class="n">denominator</span> <span class="o">-</span> <span class="bp">self</span><span class="p">.</span><span class="n">fee</span><span class="p">.</span><span class="n">numerator</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numerator</span> <span class="o">//</span> <span class="n">denominator</span> <span class="o">+</span> <span class="mi">1</span>
+</code></pre></div></div>
+
+<p>To give context to these formulas, let’s run through them with actual reserve numbers from block 15951518.</p>
+
+<hr />
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: right">Reserves</th>
+      <th style="text-align: right">Uniswap</th>
+      <th style="text-align: right">Sushiswap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: right">UNI</td>
+      <td style="text-align: right">1,863,000</td>
+      <td style="text-align: right">25,090</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">WETH</td>
+      <td style="text-align: right">5324.0</td>
+      <td style="text-align: right">65.33</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+<p>If we start an arbitrage trade by borrowing 2 WETH from Uniswap LP:</p>
+<ol>
+  <li>Borrow 2 WETH from <code class="language-plaintext highlighter-rouge">Uniswap LP</code></li>
+  <li>Swap 2 WETH for UNI on <code class="language-plaintext highlighter-rouge">Sushiswap LP</code> using $x_{out} = f(x_{in} = 2, r_{in} = 65.33, r_{out} = 25,090)$
+    <ul>
+      <li>The “in” token is WETH</li>
+    </ul>
+
+\[x_{out} = \frac{25090*2*997}{65.33*1000+2*997} = 743.11 \text{ UNI}\]
+  </li>
+  <li>Repay the loan from <code class="language-plaintext highlighter-rouge">Uniswap LP</code>, where the repay amount in UNI tokens is $x_{in} = g(x_{out} = 2, r_{in} = 1,863,000, r_{out} = 5324)$
+    <ul>
+      <li>The “in” token is UNI (ie. we repay <code class="language-plaintext highlighter-rouge">Uniswap LP</code> with UNI)</li>
+    </ul>
+
+\[x_{in} = \frac{1863000*2*1000}{(5324 - 2)*997} = 702.22 \text{ UNI}\]
+  </li>
+</ol>
+
+<p>This shows that our arbitrage would yield 473.11 - 702.22 = 40.89 UNI tokens. The next step is to determine how much WETH borrow is optimal (instead of just choosing 2 WETH arbitrarily).</p>
+
+<h2 id="calculate-arb-profit">Calculate Arb Profit</h2>
+
+<p>Let $f(x) = f(x_{in}=x, r_{in}=65.33, r_{out}=25090)$ be the swap output amount (in UNI) from <code class="language-plaintext highlighter-rouge">Sushiswap LP</code> given an input of $x$ WETH.</p>
+
+<p>Let $g(x) = g(x_{out}=x, r_{in}=1863000, r_{out}=5324)$ be the minimum repay amount (in UNI) for <code class="language-plaintext highlighter-rouge">Uniswap LP</code> assuming we borrowed $x$ WETH.</p>
+
+<p>We can represent the profit $h(x)$ of our flashloan and swap arbitrage, given a borrow amount $x$, as</p>
+
+\[h(x) = f(x) - g(x)\]
+
+<p>In Python, we can use the <code class="language-plaintext highlighter-rouge">scipy.optimize</code> library to find the maximum profit $h(x)$ (see <code class="language-plaintext highlighter-rouge">borrow_swap_arb.py</code> on <a href="https://github.com/axucar/flashloan-swap/blob/main/borrow_swap_arb.py">Github</a>).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## borrow_swap_arb.py
+</span><span class="n">opt</span> <span class="o">=</span> <span class="n">optimize</span><span class="p">.</span><span class="n">minimize_scalar</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">swap_pool</span><span class="p">.</span><span class="n">get_amount_out</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">borrow_token</span><span class="p">.</span><span class="n">address</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">-</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">borrow_pool</span><span class="p">.</span><span class="n">get_amount_in</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">repay_token</span><span class="p">.</span><span class="n">address</span><span class="p">,</span> <span class="n">x</span><span class="p">)),</span>
+    <span class="n">method</span><span class="o">=</span><span class="s">"bounded"</span><span class="p">,</span>
+    <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">,</span>
+    <span class="n">bracket</span><span class="o">=</span><span class="n">bracket</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">optim_borrow</span><span class="p">,</span> <span class="n">optim_profit</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">opt</span><span class="p">.</span><span class="n">x</span><span class="p">),</span> <span class="o">-</span><span class="nb">int</span><span class="p">(</span><span class="n">opt</span><span class="p">.</span><span class="n">fun</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>For the <code class="language-plaintext highlighter-rouge">bounds</code> parameter, the minimum borrow is clearly 1 wei ($10^{-18}$ WETH), whereas the maximum borrow is the total amount of WETH in the borrow pool reserves (<code class="language-plaintext highlighter-rouge">Uniswap LP</code>). The bracket param allows us to suggest a starting interval for the optimization, which I set to (0.1%, 1%) of the maximum borrow. It does not mean that the final solution will be within this suggested bracket.</p>
+
+<h2 id="solidity-contract">Solidity Contract</h2>
+
+<p>Once we have the optimal borrow amount, and thereby the corresponding swap output amount, we execute the arbitrage on-chain using a Solidity script (see full contract <a href="https://github.com/axucar/flashloan-swap/blob/main/solidity_flasharb/contracts/arb.sol">here</a>). The trigger function <code class="language-plaintext highlighter-rouge">flash_borrow_to_swap</code> that starts the arbitrage calls <code class="language-plaintext highlighter-rouge">swap()</code> on the <code class="language-plaintext highlighter-rouge">Uniswap LP</code> borrow pool: <code class="language-plaintext highlighter-rouge">UniswapV2Pair(borrow_pool_address).swap(uint amount0Out, uint amount1Out, address to, bytes calldata data)</code>. This call effectively borrows <code class="language-plaintext highlighter-rouge">amount1Out</code> WETH from <code class="language-plaintext highlighter-rouge">borrow_pool_address</code> Uniswap UNI-WETH LP, since <code class="language-plaintext highlighter-rouge">token1</code> for the contract is WETH (<code class="language-plaintext highlighter-rouge">amount0Out=0</code>). One can easily check <code class="language-plaintext highlighter-rouge">token0, token1</code> refer to UNI, WETH respectively on <a href="https://etherscan.io/address/0xd3d2E2692501A5c9Ca623199D38826e513033a17#readContract">etherscan</a> under “Read Contract”.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//arb.sol
+</span><span class="k">function</span> <span class="n">flash_borrow_to_swap</span> <span class="p">(</span>
+    <span class="kt">address</span> <span class="n">_borrow_pool_address</span><span class="p">,</span>
+    <span class="kt">uint256</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">memory</span> <span class="n">_borrow_amounts</span><span class="p">,</span>
+    <span class="kt">address</span> <span class="n">_swap_pool_address</span><span class="p">,</span>
+    <span class="kt">uint256</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">memory</span> <span class="n">_swap_out_amounts</span><span class="p">,</span>
+    <span class="kt">uint256</span> <span class="n">_repay_amount</span>
+<span class="p">)</span> <span class="k">external</span> <span class="p">{</span>
+    <span class="nb">require</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span> <span class="o">==</span> <span class="n">OWNER</span><span class="p">,</span> <span class="s">"msg.sender is !OWNER"</span><span class="p">);</span>
+
+    <span class="n">borrow_pool_address</span> <span class="o">=</span> <span class="n">_borrow_pool_address</span><span class="p">;</span>
+    <span class="n">borrow_amounts</span> <span class="o">=</span> <span class="n">_borrow_amounts</span><span class="p">;</span>
+    <span class="n">swap_pool_address</span> <span class="o">=</span> <span class="n">_swap_pool_address</span><span class="p">;</span>
+    <span class="n">swap_out_amounts</span> <span class="o">=</span> <span class="n">_swap_out_amounts</span><span class="p">;</span>
+    <span class="n">repay_amount</span> <span class="o">=</span> <span class="n">_repay_amount</span><span class="p">;</span>
+    
+    <span class="c1">//this swap will trigger uniswapV2Call
+</span>    <span class="n">IUniswapV2Pair</span><span class="p">(</span><span class="n">borrow_pool_address</span><span class="p">).</span><span class="n">swap</span><span class="p">(</span><span class="n">borrow_amounts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">borrow_amounts</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="kt">address</span><span class="p">(</span><span class="nb">this</span><span class="p">),</span> <span class="kt">bytes</span><span class="p">(</span><span class="s">"x"</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Looking at the <code class="language-plaintext highlighter-rouge">IUniswapV2Pair(borrow_pool_address).swap()</code> function <a href="https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol#L159-L187">on Github</a> , we see that it hands flow control back to the <code class="language-plaintext highlighter-rouge">msg.sender</code> (ie. our custom arbitrage contract written in Solidity), calling our own <code class="language-plaintext highlighter-rouge">uniswapV2Call</code> function defined in <code class="language-plaintext highlighter-rouge">arb.sol</code>.</p>
+
+<p>We can effectively do anything we want in this <code class="language-plaintext highlighter-rouge">uniswapV2Call</code> function. Of course, to ensure we don’t simply run off with the borrowed funds, the LP enforces our repayment at the end of the swap function as shown below.</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol
+</span><span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="n">IUniswapV2Callee</span><span class="p">(</span><span class="n">to</span><span class="p">).</span><span class="n">uniswapV2Call</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">,</span> <span class="n">amount0Out</span><span class="p">,</span> <span class="n">amount1Out</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
+<span class="p">...</span> <span class="c1">// other code in the between
+</span><span class="nb">require</span><span class="p">(</span><span class="n">balance0Adjusted</span><span class="p">.</span><span class="n">mul</span><span class="p">(</span><span class="n">balance1Adjusted</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="kt">uint</span><span class="p">(</span><span class="n">_reserve0</span><span class="p">).</span><span class="n">mul</span><span class="p">(</span><span class="n">_reserve1</span><span class="p">).</span><span class="n">mul</span><span class="p">(</span><span class="mi">1000</span><span class="o">**</span><span class="mi">2</span><span class="p">),</span> <span class="s">'UniswapV2: K'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Once we have the flash loan funds, our <code class="language-plaintext highlighter-rouge">uniswapV2Call</code> function will swap them at the <code class="language-plaintext highlighter-rouge">swap_pool_address</code> and transfer the <code class="language-plaintext highlighter-rouge">repay_amount</code> back to the <code class="language-plaintext highlighter-rouge">msg.sender=borrow_pool_address</code>, ie. the <code class="language-plaintext highlighter-rouge">Uniswap LP</code> where we got our WETH loan.</p>
+
+<ol>
+  <li>First, we check that the caller of our contract’s <code class="language-plaintext highlighter-rouge">uniswapV2Call</code> is precisely the <code class="language-plaintext highlighter-rouge">borrow_pool_address</code> (ie. Uniswap UNI-WETH LP address) set by <code class="language-plaintext highlighter-rouge">flash_borrow_to_swap</code></li>
+  <li>Transfer the borrowed WETH to <code class="language-plaintext highlighter-rouge">swap_pool_address</code> (ie. Sushiswap UNI-WETH LP address)</li>
+</ol>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//arb.sol
+</span><span class="k">function</span> <span class="n">uniswapV2Call</span> <span class="p">(</span><span class="kt">address</span> <span class="p">,</span><span class="kt">uint256</span> <span class="n">_amount0</span><span class="p">,</span> <span class="kt">uint256</span> <span class="n">_amount1</span><span class="p">,</span> <span class="kt">bytes</span> <span class="k">calldata</span><span class="p">)</span> <span class="k">external</span> <span class="p">{</span>
+    <span class="c1">//this is where we execute flash loan + swap
+</span>
+    <span class="c1">// ensure msg.sender is borrow_pool as part of flash loan and swap, as intended 
+</span>    <span class="nb">require</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span> <span class="o">==</span> <span class="n">borrow_pool_address</span><span class="p">,</span> <span class="s">"!LP"</span><span class="p">);</span>
+    
+    <span class="kt">address</span> <span class="n">_token0_address</span> <span class="o">=</span> <span class="n">IUniswapV2Pair</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">).</span><span class="n">token0</span><span class="p">();</span>
+    <span class="kt">address</span> <span class="n">_token1_address</span> <span class="o">=</span> <span class="n">IUniswapV2Pair</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">).</span><span class="n">token1</span><span class="p">();</span>
+
+    <span class="c1">//transfer the borrow amounts to swap pool
+</span>    <span class="k">if</span> <span class="p">(</span><span class="n">_amount0</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">IERC20</span><span class="p">(</span><span class="n">_token1_address</span><span class="p">).</span><span class="nb">transfer</span><span class="p">(</span><span class="n">swap_pool_address</span><span class="p">,</span><span class="n">_amount1</span><span class="p">);</span>
+    <span class="p">}</span>
+    
+    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">_amount1</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">IERC20</span><span class="p">(</span><span class="n">_token0_address</span><span class="p">).</span><span class="nb">transfer</span><span class="p">(</span><span class="n">swap_pool_address</span><span class="p">,</span><span class="n">_amount0</span><span class="p">);</span>
+    <span class="p">}</span>
+        
+    <span class="n">IUniswapV2Pair</span><span class="p">(</span><span class="n">swap_pool_address</span><span class="p">).</span><span class="n">swap</span><span class="p">(</span><span class="n">swap_out_amounts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">swap_out_amounts</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="kt">address</span><span class="p">(</span><span class="nb">this</span><span class="p">),</span> <span class="kt">bytes</span><span class="p">(</span><span class="s">""</span><span class="p">));</span>
+
+    <span class="c1">//if borrowed token1, repay in token0 (and vice versa)
+</span>    <span class="k">if</span> <span class="p">(</span><span class="n">_amount0</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">IERC20</span><span class="p">(</span><span class="n">_token0_address</span><span class="p">).</span><span class="nb">transfer</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">,</span> <span class="n">repay_amount</span><span class="p">);</span>
+    <span class="p">}</span>    
+    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">_amount1</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">IERC20</span><span class="p">(</span><span class="n">_token1_address</span><span class="p">).</span><span class="nb">transfer</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">sender</span><span class="p">,</span> <span class="n">repay_amount</span><span class="p">);</span>
+    <span class="p">}</span>        
+    <span class="n">_cleanup</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<h3 id="deploy">Deploy</h3>
+
+<p>I created a Brownie project (<code class="language-plaintext highlighter-rouge">brownie init</code>) with the Solidity source code in the <code class="language-plaintext highlighter-rouge">contracts</code> folder, and a <code class="language-plaintext highlighter-rouge">brownie-config.yaml</code> file that specifies the imports (such as OpenZeppelin libraries) which the source code depend on (see <a href="https://github.com/axucar/flashloan-swap/blob/main/solidity_flasharb/brownie-config.yaml">Github</a>). Make sure the source code compiles by running <code class="language-plaintext highlighter-rouge">brownie compile</code> .</p>
+
+<p>To deploy the contract in a dev environment, we define a local network forked at a specific block number for testing purposes, which is easy to do with Brownie. In <code class="language-plaintext highlighter-rouge">~/.brownie/network-config.yaml</code> I have something like this:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">development</span><span class="p">:</span>
+<span class="o">-</span> <span class="n">cmd</span><span class="p">:</span> <span class="n">ganache</span><span class="o">-</span><span class="n">cli</span>
+  <span class="n">cmd_settings</span><span class="p">:</span>
+    <span class="n">accounts</span><span class="p">:</span> <span class="mi">10</span>
+    <span class="n">evm_version</span><span class="p">:</span> <span class="n">istanbul</span>
+    <span class="n">fork</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">eth</span><span class="o">-</span><span class="n">mainnet</span><span class="p">.</span><span class="n">g</span><span class="p">.</span><span class="n">alchemy</span><span class="p">.</span><span class="n">com</span><span class="o">/</span><span class="n">v2</span><span class="o">/</span><span class="err">$</span><span class="n">ALCHEMY_API_KEY</span><span class="o">@</span><span class="err">$</span><span class="n">BLOCK</span> 
+    <span class="n">gas_limit</span><span class="p">:</span> <span class="mi">12000000</span>
+    <span class="n">mnemonic</span><span class="p">:</span> <span class="n">brownie</span>
+    <span class="n">port</span><span class="p">:</span> <span class="mi">8545</span>
+  <span class="n">host</span><span class="p">:</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0</span><span class="p">.</span><span class="mf">0.1</span>
+  <span class="nb">id</span><span class="p">:</span> <span class="n">mainnet</span><span class="o">-</span><span class="n">fork</span><span class="o">-</span><span class="n">number</span>
+  <span class="n">explorer</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">api</span><span class="p">.</span><span class="n">etherscan</span><span class="p">.</span><span class="n">io</span><span class="o">/</span><span class="n">api</span>
+  <span class="n">name</span><span class="p">:</span> <span class="n">Ganache</span><span class="o">-</span><span class="n">CLI</span> <span class="p">(</span><span class="n">Mainnet</span> <span class="n">Fork</span> <span class="n">at</span> <span class="n">number</span><span class="p">)</span>
+  <span class="n">timeout</span><span class="p">:</span> <span class="mi">120</span>
+</code></pre></div></div>
+
+<p>Note that <code class="language-plaintext highlighter-rouge">id</code> is whatever you want to name this local network, and ensure to source environment variables <code class="language-plaintext highlighter-rouge">$ALCHEMY_API_KEY</code>, <code class="language-plaintext highlighter-rouge">$BLOCK</code> which I defined in a <code class="language-plaintext highlighter-rouge">.env</code> file.</p>
+
+<p>Inside my brownie project folder <code class="language-plaintext highlighter-rouge">solidity_flasharb</code>, running <br />
+<code class="language-plaintext highlighter-rouge">brownie console --network mainnet-fork-number</code> <br />
+opens a Python console with our local network forked at <code class="language-plaintext highlighter-rouge">$BLOCK</code> height. Assuming the Solidity source code compiled, you can now call deploy on the <code class="language-plaintext highlighter-rouge">ArbContract</code> object.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span> <span class="nn">os</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">player</span><span class="o">=</span><span class="n">accounts</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">private_key</span><span class="o">=</span><span class="n">os</span><span class="p">.</span><span class="n">getenv</span><span class="p">(</span><span class="s">"ETH_PK"</span><span class="p">))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">ArbContract</span><span class="p">.</span><span class="n">deploy</span><span class="p">({</span><span class="s">'from'</span><span class="p">:</span><span class="n">player</span><span class="p">})</span>
+<span class="n">Transaction</span> <span class="n">sent</span><span class="p">:</span> <span class="mh">0x86f53a9b7b4a60b494290457212a10703893a5b59df61f23e382d2f7b9218bbc</span>
+  <span class="n">Gas</span> <span class="n">price</span><span class="p">:</span> <span class="mf">0.0</span> <span class="n">gwei</span>   <span class="n">Gas</span> <span class="n">limit</span><span class="p">:</span> <span class="mi">1000000</span>   <span class="n">Nonce</span><span class="p">:</span> <span class="mi">9</span>
+  <span class="n">ArbContract</span><span class="p">.</span><span class="n">constructor</span> <span class="n">confirmed</span>   <span class="n">Block</span><span class="p">:</span> <span class="mi">15951520</span>   <span class="n">Gas</span> <span class="n">used</span><span class="p">:</span> <span class="mi">608253</span> <span class="p">(</span><span class="mf">60.83</span><span class="o">%</span><span class="p">)</span>
+  <span class="n">ArbContract</span> <span class="n">deployed</span> <span class="n">at</span><span class="p">:</span> <span class="mh">0x5c3E95B217dcfaD62C4d53d33103Bc4a8499dd3A</span>
+
+<span class="o">&lt;</span><span class="n">ArbContract</span> <span class="n">Contract</span> <span class="s">'0x5c3E95B217dcfaD62C4d53d33103Bc4a8499dd3A'</span><span class="o">&gt;</span>
+</code></pre></div></div>
+
+<p>The process for deploying live is exactly the same but we just connect to a live network instead. For instance, my <code class="language-plaintext highlighter-rouge">~/.brownie/network-config.yaml</code> set-up for prod looks like:</p>
+
+<div class="language-solidity highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">live</span><span class="o">:</span>
+<span class="o">-</span> <span class="n">name</span><span class="o">:</span> <span class="n">Ethereum</span>
+  <span class="n">networks</span><span class="o">:</span>
+  <span class="o">-</span> <span class="n">chainid</span><span class="o">:</span> <span class="mi">1</span>
+    <span class="n">explorer</span><span class="o">:</span> <span class="n">https</span><span class="o">:</span><span class="c1">//api.etherscan.io/api
+</span>    <span class="n">host</span><span class="o">:</span> <span class="n">ws</span><span class="o">:</span><span class="c1">//localhost:3334 
+</span>    <span class="n">id</span><span class="o">:</span> <span class="n">mainnet</span><span class="o">-</span><span class="n">localnode</span><span class="o">-</span><span class="n">ws</span>
+    <span class="n">multicall2</span><span class="o">:</span> <span class="s">'0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696'</span>
+    <span class="n">name</span><span class="o">:</span> <span class="n">Mainnet</span> <span class="p">(</span><span class="n">ETH</span> <span class="n">local</span> <span class="n">node</span> <span class="n">WS</span><span class="p">)</span>
+    <span class="n">provider</span><span class="o">:</span> <span class="n">localnode</span>
+</code></pre></div></div>
+
+<p>For live deploys, we can optionally verify the contract on Etherscan by publishing the source code.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">##to verify contract after the fact:
+</span><span class="n">contract</span> <span class="o">=</span> <span class="n">ArbContract</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="s">"0x5c3E95B217dcfaD62C4d53d33103Bc4a8499dd3A"</span><span class="p">)</span>
+<span class="n">ArbContract</span><span class="p">.</span><span class="n">publish_source</span><span class="p">(</span><span class="n">contract</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="test-arb--15951518">Test Arb @ 15951518</h2>
+
+<p>Once we have the contract deployed, we run the <code class="language-plaintext highlighter-rouge">main.py</code> (see <a href="https://github.com/axucar/flashloan-swap/blob/main/main.py">Github</a>), which calls <code class="language-plaintext highlighter-rouge">flash_borrow_to_swap</code> on our on-chain contract with appropriate borrow-pool and swap-pool parameters.</p>
+
+<p>To determine whether the transaction is profitable, we should compare the arbitrage profit in USD to the estimated gas costs in USD (we use Chainlink to pull UNI and WETH prices, and <code class="language-plaintext highlighter-rouge">web3.py</code> to estimate gas usage of the contract call), and ensure we have enough margin of safety (for instance, only execute <code class="language-plaintext highlighter-rouge">if arb_profit_usd &gt; 2*estimated_cost_usd</code>)</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## main.py
+</span><span class="n">web3_f</span> <span class="o">=</span> <span class="n">web3</span><span class="p">.</span><span class="n">eth</span><span class="p">.</span><span class="n">contract</span><span class="p">(</span><span class="n">address</span> <span class="o">=</span> <span class="n">arb_contract</span><span class="p">.</span><span class="n">address</span><span class="p">,</span> <span class="n">abi</span> <span class="o">=</span> <span class="n">arb_contract</span><span class="p">.</span><span class="n">abi</span><span class="p">)</span>
+<span class="n">est_gas_usage</span> <span class="o">=</span> <span class="n">web3_f</span><span class="p">.</span><span class="n">functions</span><span class="p">.</span><span class="n">flash_borrow_to_swap</span><span class="p">(</span><span class="n">arb</span><span class="p">.</span><span class="n">borrow_pool</span><span class="p">.</span><span class="n">address</span><span class="p">,</span>
+        <span class="n">borrow_pool_amounts</span><span class="p">,</span>
+        <span class="n">arb</span><span class="p">.</span><span class="n">swap_pool</span><span class="p">.</span><span class="n">address</span><span class="p">,</span>
+        <span class="n">swap_pool_amounts</span><span class="p">,</span>
+        <span class="n">arb</span><span class="p">.</span><span class="n">res</span><span class="p">[</span><span class="s">"repay_amount"</span><span class="p">]).</span><span class="n">estimateGas</span><span class="p">({</span><span class="s">'from'</span><span class="p">:</span><span class="n">player</span><span class="p">.</span><span class="n">address</span><span class="p">})</span>
+<span class="n">estimated_cost_usd</span> <span class="o">=</span> <span class="n">est_gas_usage</span><span class="o">*</span><span class="p">((</span><span class="n">last_base_fee</span><span class="o">+</span><span class="n">last_priority_fee</span><span class="p">)</span><span class="o">/</span><span class="mi">10</span><span class="o">**</span><span class="mi">18</span><span class="p">)</span><span class="o">*</span><span class="n">ether_token</span><span class="p">.</span><span class="n">price</span>
+</code></pre></div></div>
+
+<p>Running our script on a forked local network at block 15951518, we get the following output:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Initializing</span> <span class="n">LP</span><span class="p">:</span><span class="n">Uniswap</span>
+<span class="n">Fetching</span> <span class="n">source</span> <span class="n">of</span> <span class="mh">0xd3d2E2692501A5c9Ca623199D38826e513033a17</span> <span class="k">from</span> <span class="n">api</span><span class="p">.</span><span class="n">etherscan</span><span class="p">.</span><span class="n">io</span><span class="p">...</span>
+<span class="n">Init</span> <span class="n">Reserves</span> <span class="k">for</span> <span class="p">[</span><span class="n">Uniswap</span><span class="p">]</span>
+<span class="n">UNI</span><span class="o">/</span><span class="n">WETH</span> <span class="n">Reserve</span> <span class="n">Ratio</span><span class="p">:</span> <span class="mf">350.0</span>
+<span class="n">WETH</span><span class="o">/</span><span class="n">UNI</span> <span class="n">Reserve</span> <span class="n">Ratio</span><span class="p">:</span> <span class="mf">0.002857</span>
+<span class="n">UNI</span> <span class="n">Reserves</span><span class="p">:</span> <span class="mf">1863000.0</span>
+<span class="n">WETH</span> <span class="n">Reserves</span><span class="p">:</span> <span class="mf">5324.0</span>
+
+<span class="n">Initializing</span> <span class="n">LP</span><span class="p">:</span><span class="n">Sushiswap</span>
+<span class="n">Fetching</span> <span class="n">source</span> <span class="n">of</span> <span class="mh">0xDafd66636E2561b0284EDdE37e42d192F2844D40</span> <span class="k">from</span> <span class="n">api</span><span class="p">.</span><span class="n">etherscan</span><span class="p">.</span><span class="n">io</span><span class="p">...</span>
+<span class="n">Init</span> <span class="n">Reserves</span> <span class="k">for</span> <span class="p">[</span><span class="n">Sushiswap</span><span class="p">]</span>
+<span class="n">UNI</span><span class="o">/</span><span class="n">WETH</span> <span class="n">Reserve</span> <span class="n">Ratio</span><span class="p">:</span> <span class="mf">384.0</span>
+<span class="n">WETH</span><span class="o">/</span><span class="n">UNI</span> <span class="n">Reserve</span> <span class="n">Ratio</span><span class="p">:</span> <span class="mf">0.002604</span>
+<span class="n">UNI</span> <span class="n">Reserves</span><span class="p">:</span> <span class="mf">25090.0</span>
+<span class="n">WETH</span> <span class="n">Reserves</span><span class="p">:</span> <span class="mf">65.33</span>
+
+<span class="n">ARB</span> <span class="n">STEPS</span><span class="p">:</span>
+<span class="n">Borrow</span> <span class="mf">2.87</span> <span class="n">WETH</span> <span class="n">on</span> <span class="n">Uniswap</span><span class="p">,</span>
+<span class="n">Swap</span> <span class="k">for</span> <span class="mf">1051.43</span> <span class="n">UNI</span> <span class="n">on</span> <span class="n">Sushiswap</span><span class="p">,</span>
+<span class="n">Repay</span> <span class="k">for</span> <span class="mf">1006.82</span> <span class="n">UNI</span> <span class="n">on</span> <span class="n">Uniswap</span><span class="p">,</span>
+<span class="n">Profit</span> <span class="mf">44.61</span> <span class="n">UNI</span> <span class="p">(</span><span class="err">$</span><span class="mf">254.66</span><span class="p">)</span>
+
+<span class="n">Estimated</span> <span class="n">gas</span> <span class="n">usage</span> <span class="p">(</span><span class="n">web3</span><span class="p">.</span><span class="n">py</span><span class="p">):</span> <span class="mi">333769</span> <span class="n">wei</span>
+<span class="n">Base</span> <span class="n">Fee</span><span class="p">:</span> <span class="mf">30.0</span> <span class="n">gwei</span><span class="p">,</span> <span class="n">Priority</span> <span class="n">Fee</span><span class="p">:</span> <span class="mf">1.0</span> <span class="n">gwei</span><span class="p">,</span> <span class="n">Estimated</span> <span class="n">tx</span> <span class="n">cost</span><span class="p">:</span> <span class="err">$</span><span class="mf">12.94</span>
+<span class="n">Executing</span> <span class="n">arbitrage</span><span class="p">...</span>
+<span class="n">Transaction</span> <span class="n">sent</span><span class="p">:</span> <span class="mh">0xa0e5db8f210854eda6785a19dc54d68424bf6429037ee11e55bfb6994fae1262</span>
+  <span class="n">Gas</span> <span class="n">price</span><span class="p">:</span> <span class="mf">0.0</span> <span class="n">gwei</span>   <span class="n">Gas</span> <span class="n">limit</span><span class="p">:</span> <span class="mi">500000</span>   <span class="n">Nonce</span><span class="p">:</span> <span class="mi">10</span>
+  <span class="n">Transaction</span> <span class="n">confirmed</span>   <span class="n">Block</span><span class="p">:</span> <span class="mi">15951521</span>   <span class="n">Gas</span> <span class="n">used</span><span class="p">:</span> <span class="mi">205596</span> <span class="p">(</span><span class="mf">41.12</span><span class="o">%</span><span class="p">)</span>
+
+<span class="n">Updating</span> <span class="n">Reserves</span> <span class="k">for</span> <span class="p">[</span><span class="n">Uniswap</span><span class="p">]</span>
+<span class="n">UNI</span><span class="o">/</span><span class="n">WETH</span> <span class="n">Reserve</span> <span class="n">Ratio</span><span class="p">:</span> <span class="mf">350.4</span>
+<span class="n">WETH</span><span class="o">/</span><span class="n">UNI</span> <span class="n">Reserve</span> <span class="n">Ratio</span><span class="p">:</span> <span class="mf">0.002854</span>
+<span class="n">UNI</span> <span class="n">Reserves</span><span class="p">:</span> <span class="mf">1864000.0</span>
+<span class="n">WETH</span> <span class="n">Reserves</span><span class="p">:</span> <span class="mf">5321.0</span>
+
+<span class="n">Updating</span> <span class="n">Reserves</span> <span class="k">for</span> <span class="p">[</span><span class="n">Sushiswap</span><span class="p">]</span>
+<span class="n">UNI</span><span class="o">/</span><span class="n">WETH</span> <span class="n">Reserve</span> <span class="n">Ratio</span><span class="p">:</span> <span class="mf">352.5</span>
+<span class="n">WETH</span><span class="o">/</span><span class="n">UNI</span> <span class="n">Reserve</span> <span class="n">Ratio</span><span class="p">:</span> <span class="mf">0.002837</span>
+<span class="n">UNI</span> <span class="n">Reserves</span><span class="p">:</span> <span class="mf">24040.0</span>
+<span class="n">WETH</span> <span class="n">Reserves</span><span class="p">:</span> <span class="mf">68.2</span>
+</code></pre></div></div>
+
+<p>Notice how the UNI/WETH reserve ratio gap is much narrower between Uniswap and Sushiswap after the arbitrage (350, 384) → (350.4, 352.5).</p>
+
+<p>Since the profit of UNI tokens are in the arbitrage contract address, we can withdraw the tokens to our <code class="language-plaintext highlighter-rouge">player</code>. Finally, we verify that we indeed made 44.61 UNI (\$254.66) tokens of profit. Assuming base fee and priority fee of 30+1 = 31 gwei, the gas cost to do the arbitrage would have been = 205596*31 gwei = 0.006373476 ether = \$7.97 at time of block 15951518.</p>
+
+<p><code class="language-plaintext highlighter-rouge">brownie console --network mainnet-fork-number</code></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">##Brownie console
+</span><span class="n">uni</span> <span class="o">=</span> <span class="n">Contract</span><span class="p">.</span><span class="n">from_explorer</span><span class="p">(</span><span class="s">'0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984'</span><span class="p">)</span>
+<span class="n">ArbContract</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">withdrawTokenToOwner</span><span class="p">(</span><span class="n">uni</span><span class="p">.</span><span class="n">address</span><span class="p">,</span> <span class="n">uni</span><span class="p">.</span><span class="n">balanceOf</span><span class="p">(</span><span class="n">ArbContract</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">address</span><span class="p">),</span> <span class="p">{</span><span class="s">'from'</span><span class="p">:</span><span class="n">player</span><span class="p">})</span>
+<span class="n">uni</span><span class="p">.</span><span class="n">balanceOf</span><span class="p">(</span><span class="n">player</span><span class="p">)</span><span class="o">/</span><span class="mi">10</span><span class="o">**</span><span class="mi">18</span> <span class="c1">##should return 44.6060927721087 
+</span></code></pre></div></div>
+
+<h2 id="closing-thoughts">Closing thoughts</h2>
+
+<p>We showed how a flash loan from Uniswap of 2.87 WETH, swapped into UNI tokens at Sushiswap, turned into a small profit in UNI tokens, yet significant enough to warrant the cost of executing our arbitrage contract call. I was curious how long the opportunity persisted after the large inflow of UNI token supplies into the liquidity pools. In the table below, I ran our script on a local network forked at subsequent blocks to computed the arbitrage profit. It appears the opportunity goes away (tx cost exceeds profit) around 4 blocks later, ie. 15951522 and beyond.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: right">Block Number</th>
+      <th style="text-align: right">Profit (UNI)</th>
+      <th style="text-align: right">Profit (USD)</th>
+      <th style="text-align: right">BaseFee (gwei)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: right">15951517</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">0.00</td>
+      <td style="text-align: right">32</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951518</td>
+      <td style="text-align: right">44.61</td>
+      <td style="text-align: right">$254.66</td>
+      <td style="text-align: right">30</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951519</td>
+      <td style="text-align: right">202.13</td>
+      <td style="text-align: right">$1153.96</td>
+      <td style="text-align: right">32</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951520</td>
+      <td style="text-align: right">61.55</td>
+      <td style="text-align: right">$351.37</td>
+      <td style="text-align: right">35</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951521</td>
+      <td style="text-align: right">15.47</td>
+      <td style="text-align: right">$88.33</td>
+      <td style="text-align: right">39</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951522</td>
+      <td style="text-align: right">1.08</td>
+      <td style="text-align: right">$6.15</td>
+      <td style="text-align: right">44</td>
+    </tr>
+    <tr>
+      <td style="text-align: right">15951523</td>
+      <td style="text-align: right">2.28</td>
+      <td style="text-align: right">$12.99</td>
+      <td style="text-align: right">50</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>There are several shortcomings to the current setup, which serves as a proof-of-concept but unlikely to win in real-world live scenarios.</p>
+
+<p>Firstly, it simply loops continuously every 5-second interval. An improvement would be to use a local Ethereum node to listen for the arrival of new blocks, or filter for <code class="language-plaintext highlighter-rouge">Sync</code> events which are transaction logs emitted when reserves of liquidity pools are updated (e.g. when a swap on Uniswap occurs), and then immediately update our pool reserves. Furthermore, one could subscribe to new pending transactions in the public mempool of our local Ethereum node, filter for unconfirmed transactions that swap with our relevant liquidity pools, which allows us to predict future pool reserves without waiting for the on-chain confirmation.</p>
+
+<p>Secondly, we would want to use flashbots relay to submit our transaction, whose custom validator client <code class="language-plaintext highlighter-rouge">mev-geth</code> allows block producers to earn extra rewards via bribes from MEV searchers (arbitrageurs). Instead of competing on priority gas auction on-chain to be included in the block, we submit transactions off-chain to the block producers running <code class="language-plaintext highlighter-rouge">mev-geth</code> to evaluate for inclusion, and compete based on our bribe. One advantage is that transactions that fail to be included do not cost any gas (since proposing the transaction to these <code class="language-plaintext highlighter-rouge">mev-geth</code> validators is done off-chain). The other benefit is that our proposed transaction does not enter the public mempool. This privacy feature avoids front-running from others.</p>
+
+<p>Lastly, it may be worth noting that while flash loans are essential when the capital requirement for an opportunity is very large, they are not as gas-efficient as straight-forward swaps (due to calling the custom <code class="language-plaintext highlighter-rouge">UniswapV2Call</code> callback function). For the example above, if you already have 2.87 WETH, you can achieve the same profit just by swapping against Sushiswap then back in Uniswap while using less gas.</p>
+
+  </div>
+
+  
+
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <p>
+      <p style="font-size: 10px">Carlos Xu © <script>document.write(new Date().getFullYear());</script>
+
+
+    </p>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

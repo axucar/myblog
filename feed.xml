@@ -5,7 +5,7 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-10-26T03:46:42+00:00</updated>
+  <updated>2022-11-30T07:58:10+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
@@ -24,6 +24,566 @@
     </author>
   
 
+  
+  
+    <entry>
+      
+      <title type="html">Flash Loans for Arbitrage</title>
+      
+      
+      <link href="https://axucar.ca/2022/11/29/flashloanswap/" rel="alternate" type="text/html" title="Flash Loans for Arbitrage" />
+      
+      <published>2022-11-29T00:00:00+00:00</published>
+      <updated>2022-11-29T00:00:00+00:00</updated>
+      <id>https://axucar.ca/2022/11/29/flashloanswap</id>
+      <content type="html" xml:base="https://axucar.ca/2022/11/29/flashloanswap/">&lt;ul id=&quot;markdown-toc&quot;&gt;
+  &lt;li&gt;&lt;a href=&quot;#uni-weth-lp&quot; id=&quot;markdown-toc-uni-weth-lp&quot;&gt;UNI-WETH LP&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#amm-math&quot; id=&quot;markdown-toc-amm-math&quot;&gt;AMM Math&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#calculate-arb-profit&quot; id=&quot;markdown-toc-calculate-arb-profit&quot;&gt;Calculate Arb Profit&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#solidity-contract&quot; id=&quot;markdown-toc-solidity-contract&quot;&gt;Solidity Contract&lt;/a&gt;    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#deploy&quot; id=&quot;markdown-toc-deploy&quot;&gt;Deploy&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#test-arb--15951518&quot; id=&quot;markdown-toc-test-arb--15951518&quot;&gt;Test Arb @ 15951518&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#closing-thoughts&quot; id=&quot;markdown-toc-closing-thoughts&quot;&gt;Closing thoughts&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, where users can borrow unlimited amounts without collateral but must return funds within the same transaction. Predictably, flash loans have been applied towards arbitrage opportunities in automated market makers (AMMs, ie. protocols that facilitate trading through liquidity pools, instead of traditional order books). Below we demonstrate a minimal prototype of such technique.&lt;/p&gt;
+
+&lt;h2 id=&quot;uni-weth-lp&quot;&gt;UNI-WETH LP&lt;/h2&gt;
+
+&lt;p&gt;On-chain arbitrage can generally be found during periods of high price volatility, and this month saw the market-moving events of FTX’s insolvency on Nov. 11, 2022. Within hours of filing for bankruptcy, FTX had also mysteriously been hacked. The FTX drainer account had swapped UNI tokens, among other stolen assets, for WETH across various AMMs including Uniswap V2, V3, and CoW protocols (see &lt;a href=&quot;https://etherscan.io/tx/0xc5475d0026b74e567ba9fe6b2301e8c8760bcc27670a3fe3e5c984fb3568d153&quot;&gt;etherscan&lt;/a&gt;) at block &lt;a href=&quot;https://etherscan.io/block/15951518&quot;&gt;15951518&lt;/a&gt;. Subsequently, we ought to observe imbalances in the reserves across liquidity pools for UNI-WETH.&lt;/p&gt;
+
+&lt;p&gt;For simplicity, we focus only on Uniswap and Sushiswap liquidity pools (LPs) to spot an arbitrage, since the contract of the latter is just a fork of the former.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Uniswap UNI-WETH LP &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xd3d2E2692501A5c9Ca623199D38826e513033a17&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Sushiswap UNI-WETH LP &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xDafd66636E2561b0284EDdE37e42d192F2844D40&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;strong&gt;UNI Reserves&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Block&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Uniswap&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Sushiswap&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951517&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;1,482,000&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;19,050&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951518&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;1,863,000&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;25,090&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;strong&gt;WETH Reserves&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Block&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Uniswap&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Sushiswap&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951517&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;6,683.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;85.98&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951518&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;5,324.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;65.33&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;strong&gt;UNI/WETH Reserves&lt;/strong&gt;&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Block&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Uniswap&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Sushiswap&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951517&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;221.7&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;221.5&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951518&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;350.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;384.0&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;The ratio of UNI tokens vs. WETH (wrapped ether) significantly increased across both Uniswap and Sushiswap pools (221.7, 221.5 → 350, 384) respectively on block 15951518 vs. the previous block. While the ratio in the previous block was nearly inline, the reserve ratios at the block in which the FTX drainer dumped UNI tokens have diverged between the two LPs. Note that 350 vs. 384 is a significant deviation relative to the 30bps of swap fees that we have to pay to each LP to trade this, whereas 221.7 vs. 221.5 is not.&lt;/p&gt;
+
+&lt;p&gt;Sushiswap has an abundance of UNI tokens relative to Uniswap, so the arbitrage outline would be:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Borrow WETH from Uniswap LP&lt;/li&gt;
+  &lt;li&gt;Swap WETH for UNI on Sushiswap LP (where UNI is cheap)&lt;/li&gt;
+  &lt;li&gt;Repay the loan from Uniswap LP using the UNI we receive from Sushiswap. Keep the difference (profit) in UNI tokens&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;amm-math&quot;&gt;AMM Math&lt;/h2&gt;
+
+&lt;p&gt;We derive two formulas needed to calculate the arbitrage profit: 1) compute the output of a swap given an input amount, and 2) compute the required input of a swap, given a desired output. They should match Uniswap’s reference implemention of these functions in Solidity &lt;a href=&quot;https://github.com/Uniswap/v2-periphery/blob/master/contracts/libraries/UniswapV2Library.sol#L43-L59&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Uniswap follows the constant product formula for pricing, where the product of the two reserve quantities remains constant across swaps. Mathematically, this means $(r_{out}-x_{out})(r_{in}+x_{in}) = r_{out}*r_{in} = k$, where $r$, $x$ represent the reserves and the amounts being swapped, respectively, and $k$ is a constant.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;getAmountOut(amountIn, reserveIn, reserveOut)&lt;/code&gt; : $x_{out} = f(x_{in}, r_{in}, r_{out})$&lt;/p&gt;
+
+    &lt;p&gt;Given an input amount and pair reserves, this function returns the maximum we can swap out. We will call this function on Sushiswap LP, where we will input WETH, and swap out UNI. So $r_{in}, r_{out}$ would be the reserves of WETH and UNI respectively, $x_{out}$ be the maximum amount of UNI we can take out of the pool, and $x_{in}$ be the amount of WETH we supply to the Sushiswap pool. We need to solve for $x_{out}$.&lt;/p&gt;
+
+\[(r_{out}-x_{out})(r_{in}+x_{in}) = r_{out}*r_{in} = k\]
+
+\[=&amp;gt; x_{out} = r_{out} - \frac{r_{in}*r_{out}}{r_{in} + x_{in}} = \frac{r_{out}*x_{in}}{r_{in}+x_{in}}\]
+
+    &lt;p&gt;However, there is a 0.3%=3/1000 fee applied on each swap, which is taken directly from the input amount $x_{in}$ of the “in” token. So with the fee applied on $x_{in}$ we have:&lt;/p&gt;
+
+\[x_{out} = \frac{r_{out}*0.997*x_{in}}{r_{in}+0.997*x_{in}} = \frac{r_{out}*x_{in}*997}{r_{in}*1000+x_{in}*997}\]
+
+    &lt;p&gt;In Python (see &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;lp_wrapper.py&lt;/code&gt; on &lt;a href=&quot;https://github.com/axucar/flashloan-swap/blob/main/lp_wrapper.py&quot;&gt;Github&lt;/a&gt;), with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;self.fee = Fraction(3,1000)&lt;/code&gt;:&lt;/p&gt;
+    &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;## lp_wrapper.py
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;get_amount_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token_in_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_in&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;        
+ &lt;span class=&quot;k&quot;&gt;assert&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token_in_address&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Provided token_in does not match LP tokens&quot;&lt;/span&gt;
+
+ &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_in&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;reserve_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_token1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; \
+         &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token_in_address&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_token1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+    
+ &lt;span class=&quot;n&quot;&gt;amount_in_with_fee&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;denominator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;numerator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+ &lt;span class=&quot;n&quot;&gt;numerator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_in_with_fee&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;reserve_out&lt;/span&gt;
+ &lt;span class=&quot;n&quot;&gt;denominator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;reserve_in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;denominator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_in_with_fee&lt;/span&gt;
+ &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;numerator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;denominator&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;getAmountIn(amountOut, reserveIn, reserveOut)&lt;/code&gt;: $x_{in} = g(x_{out}, r_{in}, r_{out})$&lt;/p&gt;
+
+    &lt;p&gt;Given a desired output amount and the corresponding reserves, this function returns the minimum amount of input $x_{in}$ that must be paid in exchange for $x_{out}$ of the asset we swap out of the pool.&lt;/p&gt;
+
+    &lt;p&gt;We will call this function to calculate the amount of UNI to repay on Uniswap for having borrowed WETH. Using the constant product formula for AMMs as above, we solve for the required $x_{in}$ amount.&lt;/p&gt;
+
+\[(r_{out}-x_{out})(r_{in}+x_{in}) = r_{out}*r_{in} = k\]
+
+\[x_{in} = \frac{r_{out}r_{in}}{r_{out} - x_{out}} - r_{in} = \frac{r_{in}x_{out}}{r_{out} - x_{out}}\]
+
+    &lt;p&gt;Adjusting for the 0.3% fees deducted from $x_{in}$,&lt;/p&gt;
+
+\[x_{in} = \frac{r_{in}x_{out}*1000}{(r_{out} - x_{out})*997}\]
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;## lp_wrapper.py
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;get_amount_in&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token_in_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;    
+    &lt;span class=&quot;k&quot;&gt;assert&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token_in_address&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Provided token_in does not match LP tokens&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_in&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;reserve_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_token1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; \
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token_in_address&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_token1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+
+    &lt;span class=&quot;n&quot;&gt;numerator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;reserve_in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_out&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;denominator&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;denominator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reserve_out&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;denominator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;numerator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;numerator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;//&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;denominator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To give context to these formulas, let’s run through them with actual reserve numbers from block 15951518.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Reserves&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Uniswap&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Sushiswap&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;UNI&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;1,863,000&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;25,090&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;WETH&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;5324.0&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;65.33&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;hr /&gt;
+&lt;p&gt;If we start an arbitrage trade by borrowing 2 WETH from Uniswap LP:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Borrow 2 WETH from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Uniswap LP&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Swap 2 WETH for UNI on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Sushiswap LP&lt;/code&gt; using $x_{out} = f(x_{in} = 2, r_{in} = 65.33, r_{out} = 25,090)$
+    &lt;ul&gt;
+      &lt;li&gt;The “in” token is WETH&lt;/li&gt;
+    &lt;/ul&gt;
+
+\[x_{out} = \frac{25090*2*997}{65.33*1000+2*997} = 743.11 \text{ UNI}\]
+  &lt;/li&gt;
+  &lt;li&gt;Repay the loan from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Uniswap LP&lt;/code&gt;, where the repay amount in UNI tokens is $x_{in} = g(x_{out} = 2, r_{in} = 1,863,000, r_{out} = 5324)$
+    &lt;ul&gt;
+      &lt;li&gt;The “in” token is UNI (ie. we repay &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Uniswap LP&lt;/code&gt; with UNI)&lt;/li&gt;
+    &lt;/ul&gt;
+
+\[x_{in} = \frac{1863000*2*1000}{(5324 - 2)*997} = 702.22 \text{ UNI}\]
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;This shows that our arbitrage would yield 473.11 - 702.22 = 40.89 UNI tokens. The next step is to determine how much WETH borrow is optimal (instead of just choosing 2 WETH arbitrarily).&lt;/p&gt;
+
+&lt;h2 id=&quot;calculate-arb-profit&quot;&gt;Calculate Arb Profit&lt;/h2&gt;
+
+&lt;p&gt;Let $f(x) = f(x_{in}=x, r_{in}=65.33, r_{out}=25090)$ be the swap output amount (in UNI) from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Sushiswap LP&lt;/code&gt; given an input of $x$ WETH.&lt;/p&gt;
+
+&lt;p&gt;Let $g(x) = g(x_{out}=x, r_{in}=1863000, r_{out}=5324)$ be the minimum repay amount (in UNI) for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Uniswap LP&lt;/code&gt; assuming we borrowed $x$ WETH.&lt;/p&gt;
+
+&lt;p&gt;We can represent the profit $h(x)$ of our flashloan and swap arbitrage, given a borrow amount $x$, as&lt;/p&gt;
+
+\[h(x) = f(x) - g(x)\]
+
+&lt;p&gt;In Python, we can use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;scipy.optimize&lt;/code&gt; library to find the maximum profit $h(x)$ (see &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;borrow_swap_arb.py&lt;/code&gt; on &lt;a href=&quot;https://github.com/axucar/flashloan-swap/blob/main/borrow_swap_arb.py&quot;&gt;Github&lt;/a&gt;).&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;## borrow_swap_arb.py
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;opt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optimize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minimize_scalar&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;lambda&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap_pool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_amount_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;borrow_token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;
+            &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;borrow_pool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_amount_in&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;repay_token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;bounded&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;bracket&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bracket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;optim_borrow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;optim_profit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;opt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;opt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fun&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;For the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bounds&lt;/code&gt; parameter, the minimum borrow is clearly 1 wei ($10^{-18}$ WETH), whereas the maximum borrow is the total amount of WETH in the borrow pool reserves (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Uniswap LP&lt;/code&gt;). The bracket param allows us to suggest a starting interval for the optimization, which I set to (0.1%, 1%) of the maximum borrow. It does not mean that the final solution will be within this suggested bracket.&lt;/p&gt;
+
+&lt;h2 id=&quot;solidity-contract&quot;&gt;Solidity Contract&lt;/h2&gt;
+
+&lt;p&gt;Once we have the optimal borrow amount, and thereby the corresponding swap output amount, we execute the arbitrage on-chain using a Solidity script (see full contract &lt;a href=&quot;https://github.com/axucar/flashloan-swap/blob/main/solidity_flasharb/contracts/arb.sol&quot;&gt;here&lt;/a&gt;). The trigger function &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;flash_borrow_to_swap&lt;/code&gt; that starts the arbitrage calls &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swap()&lt;/code&gt; on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Uniswap LP&lt;/code&gt; borrow pool: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UniswapV2Pair(borrow_pool_address).swap(uint amount0Out, uint amount1Out, address to, bytes calldata data)&lt;/code&gt;. This call effectively borrows &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;amount1Out&lt;/code&gt; WETH from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;borrow_pool_address&lt;/code&gt; Uniswap UNI-WETH LP, since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token1&lt;/code&gt; for the contract is WETH (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;amount0Out=0&lt;/code&gt;). One can easily check &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;token0, token1&lt;/code&gt; refer to UNI, WETH respectively on &lt;a href=&quot;https://etherscan.io/address/0xd3d2E2692501A5c9Ca623199D38826e513033a17#readContract&quot;&gt;etherscan&lt;/a&gt; under “Read Contract”.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//arb.sol
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flash_borrow_to_swap&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_borrow_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_borrow_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_swap_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_swap_out_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_repay_amount&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;OWNER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;msg.sender is !OWNER&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;borrow_pool_address&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_borrow_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;borrow_amounts&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_borrow_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;swap_pool_address&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_swap_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;swap_out_amounts&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_swap_out_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;repay_amount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_repay_amount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;//this swap will trigger uniswapV2Call
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;IUniswapV2Pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;borrow_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;borrow_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;borrow_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;x&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Looking at the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IUniswapV2Pair(borrow_pool_address).swap()&lt;/code&gt; function &lt;a href=&quot;https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol#L159-L187&quot;&gt;on Github&lt;/a&gt; , we see that it hands flow control back to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender&lt;/code&gt; (ie. our custom arbitrage contract written in Solidity), calling our own &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;uniswapV2Call&lt;/code&gt; function defined in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;arb.sol&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;We can effectively do anything we want in this &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;uniswapV2Call&lt;/code&gt; function. Of course, to ensure we don’t simply run off with the borrowed funds, the LP enforces our repayment at the end of the swap function as shown below.&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IUniswapV2Callee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uniswapV2Call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount0Out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount1Out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// other code in the between
+&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balance0Adjusted&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mul&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balance1Adjusted&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;uint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_reserve0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mul&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_reserve1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mul&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;UniswapV2: K&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Once we have the flash loan funds, our &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;uniswapV2Call&lt;/code&gt; function will swap them at the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swap_pool_address&lt;/code&gt; and transfer the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;repay_amount&lt;/code&gt; back to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;msg.sender=borrow_pool_address&lt;/code&gt;, ie. the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Uniswap LP&lt;/code&gt; where we got our WETH loan.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;First, we check that the caller of our contract’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;uniswapV2Call&lt;/code&gt; is precisely the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;borrow_pool_address&lt;/code&gt; (ie. Uniswap UNI-WETH LP address) set by &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;flash_borrow_to_swap&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Transfer the borrowed WETH to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swap_pool_address&lt;/code&gt; (ie. Sushiswap UNI-WETH LP address)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;//arb.sol
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;uniswapV2Call&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_amount0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;uint256&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_amount1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;calldata&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;external&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;//this is where we execute flash loan + swap
+&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ensure msg.sender is borrow_pool as part of flash loan and swap, as intended 
+&lt;/span&gt;    &lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;borrow_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;!LP&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_token0_address&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IUniswapV2Pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_token1_address&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IUniswapV2Pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;token1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;//transfer the borrow amounts to swap pool
+&lt;/span&gt;    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_amount0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;IERC20&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_token1_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;transfer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_amount1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_amount1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;IERC20&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_token0_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;transfer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_amount0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+    &lt;span class=&quot;n&quot;&gt;IUniswapV2Pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap_pool_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap_out_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap_out_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;//if borrowed token1, repay in token0 (and vice versa)
+&lt;/span&gt;    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_amount0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;IERC20&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_token0_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;transfer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;repay_amount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;    
+    &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_amount1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;IERC20&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_token1_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;transfer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sender&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;repay_amount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;        
+    &lt;span class=&quot;n&quot;&gt;_cleanup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;deploy&quot;&gt;Deploy&lt;/h3&gt;
+
+&lt;p&gt;I created a Brownie project (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;brownie init&lt;/code&gt;) with the Solidity source code in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;contracts&lt;/code&gt; folder, and a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;brownie-config.yaml&lt;/code&gt; file that specifies the imports (such as OpenZeppelin libraries) which the source code depend on (see &lt;a href=&quot;https://github.com/axucar/flashloan-swap/blob/main/solidity_flasharb/brownie-config.yaml&quot;&gt;Github&lt;/a&gt;). Make sure the source code compiles by running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;brownie compile&lt;/code&gt; .&lt;/p&gt;
+
+&lt;p&gt;To deploy the contract in a dev environment, we define a local network forked at a specific block number for testing purposes, which is easy to do with Brownie. In &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.brownie/network-config.yaml&lt;/code&gt; I have something like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;development&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cmd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ganache&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cli&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;cmd_settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;accounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;evm_version&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;istanbul&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;fork&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;https&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mainnet&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;alchemy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;com&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALCHEMY_API_KEY&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BLOCK&lt;/span&gt; 
+    &lt;span class=&quot;n&quot;&gt;gas_limit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;12000000&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;mnemonic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;brownie&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8545&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;host&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;127.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;0.1&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mainnet&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fork&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;number&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;explorer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;https&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;//&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;api&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;etherscan&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;io&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;api&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ganache&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CLI&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Mainnet&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Fork&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;at&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;120&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Note that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; is whatever you want to name this local network, and ensure to source environment variables &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$ALCHEMY_API_KEY&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$BLOCK&lt;/code&gt; which I defined in a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.env&lt;/code&gt; file.&lt;/p&gt;
+
+&lt;p&gt;Inside my brownie project folder &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;solidity_flasharb&lt;/code&gt;, running &lt;br /&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;brownie console --network mainnet-fork-number&lt;/code&gt; &lt;br /&gt;
+opens a Python console with our local network forked at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$BLOCK&lt;/code&gt; height. Assuming the Solidity source code compiled, you can now call deploy on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ArbContract&lt;/code&gt; object.&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;os&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;player&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;accounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;add&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;private_key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;os&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;getenv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ETH_PK&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ArbContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;deploy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;from&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;player&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x86f53a9b7b4a60b494290457212a10703893a5b59df61f23e382d2f7b9218bbc&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;Gas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;price&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.0&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gwei&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Gas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;limit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1000000&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Nonce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;ArbContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;constructor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;confirmed&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Block&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;15951520&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Gas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;used&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;608253&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;60.83&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;ArbContract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;deployed&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;at&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x5c3E95B217dcfaD62C4d53d33103Bc4a8499dd3A&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ArbContract&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Contract&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;0x5c3E95B217dcfaD62C4d53d33103Bc4a8499dd3A&apos;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The process for deploying live is exactly the same but we just connect to a live network instead. For instance, my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;~/.brownie/network-config.yaml&lt;/code&gt; set-up for prod looks like:&lt;/p&gt;
+
+&lt;div class=&quot;language-solidity highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;live&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ethereum&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;networks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;chainid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;explorer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;https&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//api.etherscan.io/api
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;host&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ws&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//localhost:3334 
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mainnet&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;localnode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ws&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;multicall2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696&apos;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Mainnet&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;local&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;provider&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;localnode&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;For live deploys, we can optionally verify the contract on Etherscan by publishing the source code.&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;##to verify contract after the fact:
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;contract&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ArbContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;at&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;0x5c3E95B217dcfaD62C4d53d33103Bc4a8499dd3A&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;ArbContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;publish_source&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;contract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;test-arb--15951518&quot;&gt;Test Arb @ 15951518&lt;/h2&gt;
+
+&lt;p&gt;Once we have the contract deployed, we run the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;main.py&lt;/code&gt; (see &lt;a href=&quot;https://github.com/axucar/flashloan-swap/blob/main/main.py&quot;&gt;Github&lt;/a&gt;), which calls &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;flash_borrow_to_swap&lt;/code&gt; on our on-chain contract with appropriate borrow-pool and swap-pool parameters.&lt;/p&gt;
+
+&lt;p&gt;To determine whether the transaction is profitable, we should compare the arbitrage profit in USD to the estimated gas costs in USD (we use Chainlink to pull UNI and WETH prices, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;web3.py&lt;/code&gt; to estimate gas usage of the contract call), and ensure we have enough margin of safety (for instance, only execute &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;if arb_profit_usd &amp;gt; 2*estimated_cost_usd&lt;/code&gt;)&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;## main.py
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;web3_f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;web3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;contract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arb_contract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arb_contract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;abi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;est_gas_usage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;web3_f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;functions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flash_borrow_to_swap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;borrow_pool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;borrow_pool_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;arb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;swap_pool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;swap_pool_amounts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;arb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;res&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;repay_amount&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;estimateGas&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;from&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;player&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;estimated_cost_usd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;est_gas_usage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;last_base_fee&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;last_priority_fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;18&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ether_token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;price&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Running our script on a forked local network at block 15951518, we get the following output:&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;Initializing&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;LP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Uniswap&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Fetching&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;source&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xd3d2E2692501A5c9Ca623199D38826e513033a17&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;api&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;etherscan&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;io&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Init&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Uniswap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserve&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;350.0&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserve&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.002857&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1863000.0&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;5324.0&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;Initializing&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;LP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Sushiswap&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Fetching&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;source&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xDafd66636E2561b0284EDdE37e42d192F2844D40&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;api&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;etherscan&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;io&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Init&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Sushiswap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserve&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;384.0&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserve&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.002604&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;25090.0&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;65.33&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;ARB&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;STEPS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Borrow&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2.87&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Uniswap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Swap&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1051.43&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Sushiswap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Repay&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1006.82&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Uniswap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Profit&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;44.61&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;254.66&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;Estimated&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;usage&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;web3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;py&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;333769&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;wei&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Base&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;30.0&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gwei&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Priority&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Fee&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gwei&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Estimated&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tx&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cost&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;12.94&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Executing&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arbitrage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xa0e5db8f210854eda6785a19dc54d68424bf6429037ee11e55bfb6994fae1262&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;Gas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;price&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.0&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gwei&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Gas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;limit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;500000&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Nonce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;confirmed&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Block&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;15951521&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;Gas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;used&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;205596&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;41.12&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;Updating&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Uniswap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserve&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;350.4&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserve&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.002854&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1864000.0&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;5321.0&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;Updating&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Sushiswap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserve&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;352.5&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserve&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.002837&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;UNI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;24040.0&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;WETH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Reserves&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;68.2&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Notice how the UNI/WETH reserve ratio gap is much narrower between Uniswap and Sushiswap after the arbitrage (350, 384) → (350.4, 352.5).&lt;/p&gt;
+
+&lt;p&gt;Since the profit of UNI tokens are in the arbitrage contract address, we can withdraw the tokens to our &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;player&lt;/code&gt;. Finally, we verify that we indeed made 44.61 UNI (\$254.66) tokens of profit. Assuming base fee and priority fee of 30+1 = 31 gwei, the gas cost to do the arbitrage would have been = 205596*31 gwei = 0.006373476 ether = \$7.97 at time of block 15951518.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;brownie console --network mainnet-fork-number&lt;/code&gt;&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;##Brownie console
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uni&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Contract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;from_explorer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;ArbContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;withdrawTokenToOwner&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uni&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;uni&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balanceOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ArbContract&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;from&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;player&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;uni&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balanceOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;player&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;18&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;##should return 44.6060927721087 
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;closing-thoughts&quot;&gt;Closing thoughts&lt;/h2&gt;
+
+&lt;p&gt;We showed how a flash loan from Uniswap of 2.87 WETH, swapped into UNI tokens at Sushiswap, turned into a small profit in UNI tokens, yet significant enough to warrant the cost of executing our arbitrage contract call. I was curious how long the opportunity persisted after the large inflow of UNI token supplies into the liquidity pools. In the table below, I ran our script on a local network forked at subsequent blocks to computed the arbitrage profit. It appears the opportunity goes away (tx cost exceeds profit) around 4 blocks later, ie. 15951522 and beyond.&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Block Number&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Profit (UNI)&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Profit (USD)&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;BaseFee (gwei)&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951517&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;0.00&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;0.00&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;32&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951518&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;44.61&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$254.66&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;30&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951519&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;202.13&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$1153.96&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;32&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951520&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;61.55&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$351.37&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;35&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951521&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15.47&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$88.33&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;39&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951522&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;1.08&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$6.15&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;44&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;15951523&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;2.28&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;$12.99&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;50&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;There are several shortcomings to the current setup, which serves as a proof-of-concept but unlikely to win in real-world live scenarios.&lt;/p&gt;
+
+&lt;p&gt;Firstly, it simply loops continuously every 5-second interval. An improvement would be to use a local Ethereum node to listen for the arrival of new blocks, or filter for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Sync&lt;/code&gt; events which are transaction logs emitted when reserves of liquidity pools are updated (e.g. when a swap on Uniswap occurs), and then immediately update our pool reserves. Furthermore, one could subscribe to new pending transactions in the public mempool of our local Ethereum node, filter for unconfirmed transactions that swap with our relevant liquidity pools, which allows us to predict future pool reserves without waiting for the on-chain confirmation.&lt;/p&gt;
+
+&lt;p&gt;Secondly, we would want to use flashbots relay to submit our transaction, whose custom validator client &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mev-geth&lt;/code&gt; allows block producers to earn extra rewards via bribes from MEV searchers (arbitrageurs). Instead of competing on priority gas auction on-chain to be included in the block, we submit transactions off-chain to the block producers running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mev-geth&lt;/code&gt; to evaluate for inclusion, and compete based on our bribe. One advantage is that transactions that fail to be included do not cost any gas (since proposing the transaction to these &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mev-geth&lt;/code&gt; validators is done off-chain). The other benefit is that our proposed transaction does not enter the public mempool. This privacy feature avoids front-running from others.&lt;/p&gt;
+
+&lt;p&gt;Lastly, it may be worth noting that while flash loans are essential when the capital requirement for an opportunity is very large, they are not as gas-efficient as straight-forward swaps (due to calling the custom &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UniswapV2Call&lt;/code&gt; callback function). For the example above, if you already have 2.87 WETH, you can achieve the same profit just by swapping against Sushiswap then back in Uniswap while using less gas.&lt;/p&gt;</content>
+
+      
+      
+      
+      
+      
+
+      
+        <author>
+            <name>Carlos Xu</name>
+          
+          
+        </author>
+      
+
+      
+
+      
+
+      
+        <summary type="html">Since multiple state changes can be executed in one atomic transaction (where all or none of the changes are executed), one feature in blockchain contracts is the ability to conduct flash loans, where users can borrow unlimited amounts without collateral but must return funds within the same transaction. Predictably, flash loans have been applied towards arbitrage opportunities in automated market makers (AMMs, ie. protocols that facilitate trading through liquidity pools, instead of traditional order books). Below we demonstrate a minimal prototype of such technique.</summary>
+      
+
+      
+      
+    </entry>
+  
   
   
     <entry>
