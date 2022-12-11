@@ -97,7 +97,7 @@ To create the containers:
 - `sudo docker-compose up -d` where `-d` is a silencer (Docker runs in background)
 
 To monitor logs:
-- `sudo docker-compose logs -f` , where `f` means keep following logs
+- `sudo docker-compose logs --tail 10` , shows the most recent 10 lines from each container
 
 To stop it:
 - `sudo docker-compose stop`
@@ -116,8 +116,9 @@ prysm   /app/cmd/beacon-chain/beac ...   Up      0.0.0.0:12000->12000/udp,:::120
 ```
 
 While syncing can take a while (mine took ~30 hours, with last chaindata around July). You can check the status of the sync using `geth`'s Javascript console:
-`sudo docker-compose exec [container name] geth attach`
-- `[container name]` is the name of the service in the Docker compose config, e.g. `prysm`, or `geth` in this case
+`sudo docker-compose exec [container-name] [command]`
+- `[container-name]` is the name of the service in the Docker compose config, e.g.`geth` in this case
+    and `[command]` would be `geth attach`. 
 - `eth.syncing` in the Javascript console should return `false` once synced
 
 ## Configure Firewall
