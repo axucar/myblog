@@ -5,7 +5,7 @@
   
   <link href="https://axucar.ca/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://axucar.ca/" rel="alternate" type="text/html" />
-  <updated>2022-11-30T07:58:10+00:00</updated>
+  <updated>2022-12-11T22:34:19+00:00</updated>
   <id>https://axucar.ca//</id>
 
   
@@ -702,7 +702,7 @@ opens a Python console with our local network forked at &lt;code class=&quot;lan
 
 &lt;p&gt;To monitor logs:&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo docker-compose logs -f&lt;/code&gt; , where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;f&lt;/code&gt; means keep following logs&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo docker-compose logs --tail 10&lt;/code&gt; , shows the most recent 10 lines from each container&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;To stop it:&lt;/p&gt;
@@ -729,9 +729,10 @@ prysm   /app/cmd/beacon-chain/beac ...   Up      0.0.0.0:12000-&amp;gt;12000/udp
 &lt;/ul&gt;
 
 &lt;p&gt;While syncing can take a while (mine took ~30 hours, with last chaindata around July). You can check the status of the sync using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth&lt;/code&gt;’s Javascript console:
-&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo docker-compose exec [container name] geth attach&lt;/code&gt;&lt;/p&gt;
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo docker-compose exec [container-name] [command]&lt;/code&gt;&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[container name]&lt;/code&gt; is the name of the service in the Docker compose config, e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;prysm&lt;/code&gt;, or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth&lt;/code&gt; in this case&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[container-name]&lt;/code&gt; is the name of the service in the Docker compose config, e.g.&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth&lt;/code&gt; in this case
+  and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[command]&lt;/code&gt; would be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;geth attach&lt;/code&gt;.&lt;/li&gt;
   &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;eth.syncing&lt;/code&gt; in the Javascript console should return &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;false&lt;/code&gt; once synced&lt;/li&gt;
 &lt;/ul&gt;
 

@@ -240,7 +240,7 @@ MathJax = {
 
 <p>To monitor logs:</p>
 <ul>
-  <li><code class="language-plaintext highlighter-rouge">sudo docker-compose logs -f</code> , where <code class="language-plaintext highlighter-rouge">f</code> means keep following logs</li>
+  <li><code class="language-plaintext highlighter-rouge">sudo docker-compose logs --tail 10</code> , shows the most recent 10 lines from each container</li>
 </ul>
 
 <p>To stop it:</p>
@@ -267,9 +267,10 @@ prysm   /app/cmd/beacon-chain/beac ...   Up      0.0.0.0:12000-&gt;12000/udp,:::
 </ul>
 
 <p>While syncing can take a while (mine took ~30 hours, with last chaindata around July). You can check the status of the sync using <code class="language-plaintext highlighter-rouge">geth</code>’s Javascript console:
-<code class="language-plaintext highlighter-rouge">sudo docker-compose exec [container name] geth attach</code></p>
+<code class="language-plaintext highlighter-rouge">sudo docker-compose exec [container-name] [command]</code></p>
 <ul>
-  <li><code class="language-plaintext highlighter-rouge">[container name]</code> is the name of the service in the Docker compose config, e.g. <code class="language-plaintext highlighter-rouge">prysm</code>, or <code class="language-plaintext highlighter-rouge">geth</code> in this case</li>
+  <li><code class="language-plaintext highlighter-rouge">[container-name]</code> is the name of the service in the Docker compose config, e.g.<code class="language-plaintext highlighter-rouge">geth</code> in this case
+  and <code class="language-plaintext highlighter-rouge">[command]</code> would be <code class="language-plaintext highlighter-rouge">geth attach</code>.</li>
   <li><code class="language-plaintext highlighter-rouge">eth.syncing</code> in the Javascript console should return <code class="language-plaintext highlighter-rouge">false</code> once synced</li>
 </ul>
 
