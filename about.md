@@ -4,11 +4,13 @@ title: "About"
 permalink: /about/
 ---
 
-Hey there! Welcome to my blog :speech_balloon:
+Hi! I'm Carlos. 
 
-For now, there is no theme to my posts, just a second home for my notes.
+I am interested in software, data, crypto, and markets. 
+Previously, I worked at hedge funds, most recently as a quant researcher at Squarepoint.
 
-[Github](https://github.com/axucar)
+Welcome to my blog, where I document my experience exploring various topics. Hope you find something useful or entertaining here. 
+
 
 
 

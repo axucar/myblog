@@ -22,7 +22,10 @@ title: Carlos Xu
 author: Carlos Xu
 email: firstnamelastname2017@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
- Welcome to my blog! 
+  Hi! I'm Carlos. I am interested in software, data, crypto, and markets. 
+  Previously, I worked at hedge funds, most recently as a quant researcher at Squarepoint.
+  Welcome to my blog, where I document my experience exploring various topics. Hope you find something useful or entertaining here. 
+
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://axucar.ca" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: jekyllrb
