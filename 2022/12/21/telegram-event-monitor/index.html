@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  
+  
+  <title>Telegram Event Monitor</title>
+  <meta name="description" content="We implement a service that tracks well-known Ethereum wallets, and sends alerts via Telegram of real-time ETH or ERC20 token transfers, using Python’s asyncio and websockets libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs.">
+  
+
+  <link rel="stylesheet" href="/assets/main.css">
+  <link rel="canonical" href="https://axucar.ca/2022/12/21/telegram-event-monitor/">
+  
+  
+  <link rel="alternate" type="application/rss+xml" title="Carlos Xu" href="https://axucar.ca/feed.xml">
+
+  <script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  },
+  svg: {
+    fontCache: 'global'
+  }
+};
+</script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+</script>
+
+<!-- SEO tags -->
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Telegram Event Monitor | Carlos Xu</title>
+<meta name="generator" content="Jekyll v4.2.2" />
+<meta property="og:title" content="Telegram Event Monitor" />
+<meta name="author" content="Carlos Xu" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="We implement a service that tracks well-known Ethereum wallets, and sends alerts via Telegram of real-time ETH or ERC20 token transfers, using Python’s asyncio and websockets libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs." />
+<meta property="og:description" content="We implement a service that tracks well-known Ethereum wallets, and sends alerts via Telegram of real-time ETH or ERC20 token transfers, using Python’s asyncio and websockets libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs." />
+<link rel="canonical" href="https://axucar.ca/2022/12/21/telegram-event-monitor/" />
+<meta property="og:url" content="https://axucar.ca/2022/12/21/telegram-event-monitor/" />
+<meta property="og:site_name" content="Carlos Xu" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-12-21T00:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Telegram Event Monitor" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Carlos Xu"},"dateModified":"2022-12-21T00:00:00+00:00","datePublished":"2022-12-21T00:00:00+00:00","description":"We implement a service that tracks well-known Ethereum wallets, and sends alerts via Telegram of real-time ETH or ERC20 token transfers, using Python’s asyncio and websockets libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs.","headline":"Telegram Event Monitor","mainEntityOfPage":{"@type":"WebPage","@id":"https://axucar.ca/2022/12/21/telegram-event-monitor/"},"url":"https://axucar.ca/2022/12/21/telegram-event-monitor/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+<!-- Google Analytics tracking ID -->
+
+
+
+  
+  <meta property="og:title" content="Telegram Event Monitor">
+  <meta property="og:site_name" content="Carlos Xu">
+  <meta property="og:url" content="https://axucar.ca/2022/12/21/telegram-event-monitor/">
+  <meta property="og:description" content="We implement a service that tracks well-known Ethereum wallets, and sends alerts via Telegram of real-time ETH or ERC20 token transfers, using Python’s asyncio and websockets libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs.">
+  
+  
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="jekyllrb">
+  <meta name="twitter:title" content="Telegram Event Monitor">
+  <meta name="twitter:description" content="We implement a service that tracks well-known Ethereum wallets, and sends alerts via Telegram of real-time ETH or ERC20 token transfers, using Python’s asyncio and websockets libraries. We subscrib...">
+  
+    <meta name="twitter:creator" content="jekyllrb">
+  
+  
+
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
+
+  
+  
+  
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N1HZQHWCY2"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-N1HZQHWCY2');
+    </script>
+  
+
+
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">Carlos Xu</a>
+
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/posts/">Posts</a>
+      
+        
+        <a class="page-link" href="/bookshelf/">Bookshelf</a>
+      
+        
+        <a class="page-link" href="https://github.com/axucar">GitHub</a>
+      
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    
+      <h1 class="post-title" itemprop="name headline">Telegram Event Monitor</h1>
+    
+    <p class="post-meta"><time datetime="2022-12-21T00:00:00+00:00" itemprop="datePublished">Dec 21, 2022</time></p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <ul id="markdown-toc">
+  <li>
+<a href="#prerequisites" id="markdown-toc-prerequisites">Prerequisites</a>    <ul>
+      <li><a href="#asyncio-library" id="markdown-toc-asyncio-library"><code class="language-plaintext highlighter-rouge">asyncio</code> library</a></li>
+      <li><a href="#websockets-library" id="markdown-toc-websockets-library"><code class="language-plaintext highlighter-rouge">websockets</code> library</a></li>
+    </ul>
+  </li>
+  <li><a href="#telegram-bot" id="markdown-toc-telegram-bot">Telegram Bot</a></li>
+  <li>
+<a href="#track-ethereum-activity" id="markdown-toc-track-ethereum-activity">Track Ethereum Activity</a>    <ul>
+      <li><a href="#eth-transfers" id="markdown-toc-eth-transfers">ETH Transfers</a></li>
+      <li><a href="#erc20-token-transfers" id="markdown-toc-erc20-token-transfers">ERC20 Token Transfers</a></li>
+    </ul>
+  </li>
+  <li><a href="#bloom-filters-for-ethereum-logs" id="markdown-toc-bloom-filters-for-ethereum-logs">Bloom Filters for Ethereum Logs</a></li>
+</ul>
+<p>We implement a service that tracks well-known Ethereum wallets, and sends alerts via Telegram of real-time ETH or ERC20 token transfers, using Python’s <code class="language-plaintext highlighter-rouge">asyncio</code> and <code class="language-plaintext highlighter-rouge">websockets</code> libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs.</p>
+
+<h2 id="prerequisites">Prerequisites</h2>
+<h3 id="asyncio-library">
+<code class="language-plaintext highlighter-rouge">asyncio</code> library</h3>
+
+<p>Our messaging service will rely on running asynchronous code, since the Telegram bot will wait on external Ethereum events. Python’s <a href="https://docs.python.org/3/library/asyncio.html"><code class="language-plaintext highlighter-rouge">asyncio</code></a> is an indispensible library that enables running concurrent code using <code class="language-plaintext highlighter-rouge">async def</code>/<code class="language-plaintext highlighter-rouge">await</code> syntax. Here we’ll cover the basics of <code class="language-plaintext highlighter-rouge">async def</code>, <code class="language-plaintext highlighter-rouge">await</code>, event loops, coroutines, and tasks, which will be enough for the purpose of building our Telegram bot.</p>
+
+<p>Before diving into syntax, it is conceptually important to emphasize the distinction between <strong>concurrency</strong> and <strong>parallelism</strong> (<code class="language-plaintext highlighter-rouge">asyncio</code> implements the former, but not the latter). This library does not make code multi-threaded or sidestep the global interpreter lock (GIL), a mutex which prevents race conditions from multiple threads simultaneously accessing the same Python objects.</p>
+
+<p>Instead, consider the following cooking analogy. Concurrency is one restaurant chef preparing a soup, while also cutting vegetables. When waiting for the water to boil for the soup, the chef can work on cutting some the vegetables. Once the water is boiling, the chef might stop cutting vegetables and work on adding several ingredients to the soup. Then, the chef continues might cut more vegetables while waiting for the soup to boil once again.</p>
+<ul>
+  <li>Removing concurrency would mean preparing the soup from start to finish, then cutting vegetables only after the soup has been served (very inefficient).</li>
+  <li>Concurrency is still one chef doing one thing at a time, but allows switching back and forth between several tasks.</li>
+  <li>Parallelism, on the other hand, is having <em>two</em> chefs in the kitchen, one working on the soup, and the other working on cutting vegetables.</li>
+  <li>As this very helpful <a href="https://bbc.github.io/cloudfit-public-docs/asyncio/asyncio-part-1.html">BBC multi-part series on asyncio</a> states, “It’s not about using multiple cores, it’s about using a single core more efficiently”</li>
+</ul>
+
+<p>When processes are spending most of the time using CPU resources (say, doing lots of arithmetic calculations like training a neural net), <code class="language-plaintext highlighter-rouge">asyncio</code> is not useful. Instead, it should be used when processes are IO-bound, meaning most of the time is spent sending and receiving data.</p>
+
+<p>Indeed, building a Telegram bot tracking Ethereum activity is heavily IO-bound, as new blocks of transactions confirm only (roughly) every 10 second-interval. While waiting to receive transaction data and event logs, our CPU could be working on executing other tasks, such as parsing received data and sending updates on Telegram.</p>
+
+<p><strong>Event Loop</strong></p>
+
+<p><code class="language-plaintext highlighter-rouge">asyncio</code> revolves around an <strong>event loop</strong> which consists of a list of <strong>tasks</strong>, which are thin wrappers around <strong>coroutines</strong>, which are functions amenable to concurrent execution, such as cooking soup and cutting vegetables. where execution is allowed to bounce back and forth between them.</p>
+
+<ul>
+  <li>Firstly, event loops can only have one coroutine <em>actually</em> executing (using CPU) at once. The coroutine executes as if in a normal (synchronous) program, until it needs to <strong>await</strong> (for something like I/O from a node), at which point the coroutine yields control back to event loop. The event loop pauses the current task, and looks for other tasks to execute in the meantime.</li>
+  <li>Secondly, event loops cannot interrupt the current, executing coroutine . The event loop must wait until the coroutine yields control (due to awaiting some I/O), before switching to another task.
+    <blockquote>
+      <p><img class="emoji" title=":bulb:" alt=":bulb:" src="https://github.githubassets.com/images/icons/emoji/unicode/1f4a1.png" height="20" width="20"> To prematurely yield control back to the event loop, use <code class="language-plaintext highlighter-rouge">await asyncio.sleep(0)</code> inside the coroutine, which interrupts the current executing coroutine to work on other ones – assuming there are other pending coroutines (tasks)</p>
+    </blockquote>
+  </li>
+</ul>
+
+<p><strong>Coroutines</strong></p>
+
+<p>To declare a coroutine function, we use <code class="language-plaintext highlighter-rouge">async def</code> instead of the usual <code class="language-plaintext highlighter-rouge">def</code>. Inside such asynchronous functions, we can make use of special keywords like <code class="language-plaintext highlighter-rouge">await</code> and <code class="language-plaintext highlighter-rouge">async for</code> (see <a href="#websockets"><code class="language-plaintext highlighter-rouge">websockets</code></a>).</p>
+
+<p>Unlike regular synchronous functions, coroutines do <em>not</em> execute when called: if we don’t specify <code class="language-plaintext highlighter-rouge">await</code> , a coroutine does not run at all! However, <code class="language-plaintext highlighter-rouge">await</code> can only be used on coroutines within an asynchronous code blocks. To run a coroutine in a synchronous context, we pass the coroutine instance to <code class="language-plaintext highlighter-rouge">asyncio.run()</code>. Note that <code class="language-plaintext highlighter-rouge">asyncio.run()</code> starts a new event loop, so one cannot call nest calls to <code class="language-plaintext highlighter-rouge">asyncio.run()</code> since it would mean starting a new event loop within another.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">def</span> <span class="nf">example_coroutine</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span>
+
+<span class="c1">##prints &lt;coroutine object example_coroutine at 0x7f7cf7ae05c0&gt;
+</span><span class="k">print</span><span class="p">(</span><span class="n">example_coroutine</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span> 
+<span class="c1">##prints 2
+</span><span class="k">print</span><span class="p">(</span><span class="n">asyncio</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">example_coroutine</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span> 
+</code></pre></div></div>
+
+<p>To show how <code class="language-plaintext highlighter-rouge">await</code> is used to run a coroutine (which belongs to a class of “awaitables”) inside asynchronous functions, we quote an example from the <a href="https://docs.python.org/3/library/asyncio-task.html#coroutines">official docs</a> . The return value of an <code class="language-plaintext highlighter-rouge">await</code> statement is the same as the return value of the coroutine function’s code block.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">time</span> 
+<span class="k">async</span> <span class="k">def</span> <span class="nf">say_after</span><span class="p">(</span><span class="n">delay</span><span class="p">,</span> <span class="n">what</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">what</span><span class="p">)</span>
+	
+<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"started at </span><span class="si">{</span><span class="n">time</span><span class="p">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">'%X'</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">say_after</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">'hello'</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">say_after</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s">'world'</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"finished at </span><span class="si">{</span><span class="n">time</span><span class="p">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">'%X'</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">##Output:
+</span><span class="n">started</span> <span class="n">at</span> <span class="mi">22</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">35</span>
+<span class="n">hello</span>
+<span class="n">world</span>
+<span class="n">finished</span> <span class="n">at</span> <span class="mi">22</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">38</span>
+</code></pre></div></div>
+
+<p>Notice that the above example does <em>not</em> exhibit concurrency at all. It printed “hello” after 1 second, then printed “world” after <em>another</em> 2 seconds. Not that impressive.</p>
+
+<p><strong>Tasks</strong></p>
+
+<p>To properly run coroutines concurrently, we need to wrap coroutines as <strong>tasks</strong> to allow coroutines to run concurrently in an event loop, using <code class="language-plaintext highlighter-rouge">asyncio.create_task(coro)</code> which takes a coroutine object as the parameter and returns a <code class="language-plaintext highlighter-rouge">Task</code> object (inherits <code class="language-plaintext highlighter-rouge">asyncio.Future</code> which is a low-level awaitable object with a <code class="language-plaintext highlighter-rouge">done()</code> boolean and <code class="language-plaintext highlighter-rouge">result()</code> property) .</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">task1</span> <span class="o">=</span> <span class="n">asyncio</span><span class="p">.</span><span class="n">create_task</span><span class="p">(</span>
+        <span class="n">say_after</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">'hello'</span><span class="p">))</span>
+
+    <span class="n">task2</span> <span class="o">=</span> <span class="n">asyncio</span><span class="p">.</span><span class="n">create_task</span><span class="p">(</span>
+        <span class="n">say_after</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s">'world'</span><span class="p">))</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"started at </span><span class="si">{</span><span class="n">time</span><span class="p">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">'%X'</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">task1</span>
+    <span class="k">await</span> <span class="n">task2</span>
+    <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"finished at </span><span class="si">{</span><span class="n">time</span><span class="p">.</span><span class="n">strftime</span><span class="p">(</span><span class="s">'%X'</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+
+<span class="c1"># This takes 2 seconds, instead of 3!
+</span><span class="n">asyncio</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div></div>
+
+<p>A more elegant way to run multiple awaitable tasks concurrently is to use <code class="language-plaintext highlighter-rouge">asyncio.gather</code>, i.e. <code class="language-plaintext highlighter-rouge">await asyncio.gather(task1, task2)</code> instead of <code class="language-plaintext highlighter-rouge">await task1</code> ,<code class="language-plaintext highlighter-rouge">await task2</code>.</p>
+
+<h3 id="websockets-library">
+<code class="language-plaintext highlighter-rouge">websockets</code> library</h3>
+
+<p>As for connecting to our Geth node via WebSocket to receive messages (updates of on-chain activity), we can use <code class="language-plaintext highlighter-rouge">brownie</code> and <code class="language-plaintext highlighter-rouge">websocket</code> Python libraries to send and receive JSON-RPC messages as follows:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">for</span> <span class="n">websocket</span> <span class="ow">in</span> <span class="n">websockets</span><span class="p">.</span><span class="n">connect</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="n">brownie</span><span class="p">.</span><span class="n">web3</span><span class="p">.</span><span class="n">provider</span><span class="p">.</span><span class="n">endpoint_uri</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">websocket</span><span class="p">.</span><span class="n">send</span><span class="p">(...)</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="k">await</span> <span class="n">websocket</span><span class="p">.</span><span class="n">recv</span><span class="p">()</span>
+    <span class="p">...</span>
+</code></pre></div></div>
+
+<p>where <code class="language-plaintext highlighter-rouge">brownie.web3.provider</code> is a <code class="language-plaintext highlighter-rouge">web3.providers.websocket.WebsocketProvider</code> object and <code class="language-plaintext highlighter-rouge">uri=brownie.web3.provider.endpoint_uri</code> might be <code class="language-plaintext highlighter-rouge">ws://localhost:3334</code>, or whatever you set in <code class="language-plaintext highlighter-rouge">~/.brownie/network-config.yaml</code> as seen in the section on <a href="#telegram-bot">bot setup</a>.</p>
+
+<p>This usage of <code class="language-plaintext highlighter-rouge">websockets.connect</code> is an example of infinite asynchronous iterators, which allows us to reconnect automatically on errors (see <a href="https://websockets.readthedocs.io/en/stable/reference/client.html#websockets.client.connect">websockets docs</a>). The iterable represents a source of data which can be looped over, in this case the source of data is an iterable object is called <code class="language-plaintext highlighter-rouge">websocket</code>. Then, to asynchronously interact with the Ethereum node, we use <code class="language-plaintext highlighter-rouge">await websocket.send()</code> to send a message and <code class="language-plaintext highlighter-rouge">await websocket.recv()</code> to receive the next message.</p>
+
+<h2 id="telegram-bot">Telegram Bot</h2>
+
+<p>For clarity and completeness, the repo with the full project code can be found on <a href="https://github.com/axucar/telegram-eth-alerts">Github</a>.</p>
+
+<p><strong>Telegram API keys</strong></p>
+
+<ol>
+  <li>
+    <p>Create <code class="language-plaintext highlighter-rouge">.env</code> with:</p>
+
+    <div class="language-text highlighter-rouge">
+<div class="highlight"><pre class="highlight"><code> TELEGRAM_CHAT_ID=&lt;CHAT_ID&gt;
+ TELEGRAM_API_KEY=&lt;BOT_API_TOKEN&gt;
+ ALCHEMY_API_KEY=&lt;OPTIONAL&gt; 
+ ETHERSCAN_TOKEN=
+</code></pre></div>    </div>
+    <p>The <code class="language-plaintext highlighter-rouge">TELEGRAM_API_KEY</code> token is a string that authenticates your bot (not your account). Each bot has a unique token, which is obtained by contacting <code class="language-plaintext highlighter-rouge">@BotFather</code>, issuing the <code class="language-plaintext highlighter-rouge">/newbot</code> command and following the steps until you’re given a new token (see <a href="https://core.telegram.org/bots/tutorial#obtain-your-bot-token">docs</a>).</p>
+
+    <p>The <code class="language-plaintext highlighter-rouge">TELEGRAM_CHAT_ID</code>, which should be an integer, uniquely identifies your user account (not the bot). To obtain the Chat ID, DM the command <code class="language-plaintext highlighter-rouge">/start</code> to <code class="language-plaintext highlighter-rouge">@userinfobot</code> on the Telegram app.</p>
+  </li>
+  <li>Running <code class="language-plaintext highlighter-rouge">./install.sh</code> installs the Python packages needed such as <code class="language-plaintext highlighter-rouge">websockets, eth-brownie, python-telegram-bot</code>, etc.</li>
+  <li>Set node connections details in <code class="language-plaintext highlighter-rouge">~/.brownie/network-config.yaml</code>. For instance, I named my local node’s Websocket connection <code class="language-plaintext highlighter-rouge">mainnet-localnode-ws</code> (I show Alchemy option as well), so <code class="language-plaintext highlighter-rouge">brownie.network.connect('mainnet-localnode-ws')</code> should work in Python.</li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">live</span><span class="p">:</span>
+<span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">Ethereum</span>
+  <span class="n">networks</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">chainid</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">explorer</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">api</span><span class="p">.</span><span class="n">etherscan</span><span class="p">.</span><span class="n">io</span><span class="o">/</span><span class="n">api</span>
+    <span class="n">host</span><span class="p">:</span> <span class="n">wss</span><span class="p">:</span><span class="o">//</span><span class="n">eth</span><span class="o">-</span><span class="n">mainnet</span><span class="p">.</span><span class="n">g</span><span class="p">.</span><span class="n">alchemy</span><span class="p">.</span><span class="n">com</span><span class="o">/</span><span class="n">v2</span><span class="o">/</span><span class="err">$</span><span class="n">ALCHEMY_API_KEY</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">mainnet</span><span class="o">-</span><span class="n">alchemy</span><span class="o">-</span><span class="n">wss</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Mainnet</span> <span class="p">(</span><span class="n">ETH</span> <span class="n">alchemy</span><span class="p">)</span>
+    <span class="n">provider</span><span class="p">:</span> <span class="n">alchemy</span>
+  <span class="o">-</span> <span class="n">chainid</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">explorer</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">api</span><span class="p">.</span><span class="n">etherscan</span><span class="p">.</span><span class="n">io</span><span class="o">/</span><span class="n">api</span>
+    <span class="n">host</span><span class="p">:</span> <span class="n">ws</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">3334</span> 
+    <span class="nb">id</span><span class="p">:</span> <span class="n">mainnet</span><span class="o">-</span><span class="n">localnode</span><span class="o">-</span><span class="n">ws</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Mainnet</span> <span class="p">(</span><span class="n">ETH</span> <span class="n">local</span> <span class="n">node</span> <span class="n">WSS</span><span class="p">)</span>
+    <span class="n">provider</span><span class="p">:</span> <span class="n">localnode</span>
+</code></pre></div></div>
+
+<p><strong>Nested event loops using <code class="language-plaintext highlighter-rouge">nest-asyncio</code></strong></p>
+
+<p>One tricky part of this project is combining the Telegram bot application with the activity-tracking coroutines. We want to concurrently listen to user commands on Telegram (.e.g <code class="language-plaintext highlighter-rouge">\start</code> and <code class="language-plaintext highlighter-rouge">\stop</code>), while also concurrently listening to our Ethereum node for activity. Consider the following code:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>    
+    <span class="c1"># Create the Application and pass it your bot's token.    
+</span>    <span class="n">application</span> <span class="o">=</span> <span class="n">Application</span><span class="p">.</span><span class="n">builder</span><span class="p">().</span><span class="n">token</span><span class="p">(</span><span class="n">cfg</span><span class="p">.</span><span class="n">BOT_TOKEN</span><span class="p">).</span><span class="n">build</span><span class="p">()</span>
+    <span class="c1"># Run the bot until the user presses Ctrl-C
+</span>    <span class="n">application</span><span class="p">.</span><span class="n">run_polling</span><span class="p">()</span>
+    <span class="n">asyncio</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">track_eth_transfers</span><span class="p">())</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>    
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>The line <code class="language-plaintext highlighter-rouge">application.run_polling()</code> initializes the Telegram bot which listens for commands and messages we send to it, and only shuts down when we press Ctrl-C to interrupt the process. Therefore, <code class="language-plaintext highlighter-rouge">asyncio.run(track_eth_transfers()</code>, which subscribes to the node’s WebSocket for activity tracking, starts only after the bot is shut-down (with Ctrl-C).</p>
+
+<p>The solution is to also make initializing the bot a coroutine, so it can be run concurrently with <code class="language-plaintext highlighter-rouge">track_eth_transfers()</code> coroutine. Consider making <code class="language-plaintext highlighter-rouge">init_bot()</code> a coroutine as such:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">def</span> <span class="nf">init_bot</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="s">"""Start the bot."""</span>
+    <span class="c1"># on different commands - answer in Telegram
+</span>    <span class="n">cfg</span><span class="p">.</span><span class="n">application</span><span class="p">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">CommandHandler</span><span class="p">(</span><span class="s">"start"</span><span class="p">,</span> <span class="n">start</span><span class="p">))</span>
+    <span class="n">cfg</span><span class="p">.</span><span class="n">application</span><span class="p">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">CommandHandler</span><span class="p">(</span><span class="s">"stop"</span><span class="p">,</span> <span class="n">stop</span><span class="p">))</span>
+
+    <span class="c1"># Run the bot until the user presses Ctrl-C
+</span>    <span class="n">cfg</span><span class="p">.</span><span class="n">application</span><span class="p">.</span><span class="n">run_polling</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>    
+    <span class="c1"># Create the Application and pass it your bot's token.    
+</span>    <span class="n">cfg</span><span class="p">.</span><span class="n">application</span> <span class="o">=</span> <span class="n">Application</span><span class="p">.</span><span class="n">builder</span><span class="p">().</span><span class="n">token</span><span class="p">(</span><span class="n">cfg</span><span class="p">.</span><span class="n">BOT_TOKEN</span><span class="p">).</span><span class="n">build</span><span class="p">()</span>    
+    <span class="n">asyncio</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">init_bot</span><span class="p">())</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>    
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div></div>
+<p>However, <code class="language-plaintext highlighter-rouge">application.run_polling()</code> was meant to be started from a purely synchronous context, not meant in an asynchronous context as a coroutine. In fact, the above code errors with <code class="language-plaintext highlighter-rouge">RuntimeError: This event loop is already running</code>. The reason is that <code class="language-plaintext highlighter-rouge">application.run_polling()</code> calls <code class="language-plaintext highlighter-rouge">asyncio.get_event_loop().run_until_complete(...)</code>, which checks whether the event loop is already running. Indeed, <code class="language-plaintext highlighter-rouge">asyncio.run(...)</code> had already created an event loop and called <code class="language-plaintext highlighter-rouge">loop.run_until_complete(...)</code>, so inevitably the event loop was already running. This error is detailed in this <a href="https://stackoverflow.com/questions/46827007/runtimeerror-this-event-loop-is-already-running-in-python">StackOverflow post</a>.</p>
+
+<p>In short, <code class="language-plaintext highlighter-rouge">asyncio</code> by default does not allow an event loop to be started when the event loop has already been started (event loop is “re-entered”). To override this check, and allow <code class="language-plaintext highlighter-rouge">run_until_complete()</code> to be called, while <code class="language-plaintext highlighter-rouge">run_until_complete()</code> is already on the callstack, we can use <code class="language-plaintext highlighter-rouge">nest_asyncio</code>. As the <a href="https://pypi.org/project/nest-asyncio/">docs</a> state, “the <code class="language-plaintext highlighter-rouge">nest_asyncio</code> module patches asyncio to allow nested use of <code class="language-plaintext highlighter-rouge">asyncio.run</code> and <code class="language-plaintext highlighter-rouge">loop.run_until_complete</code>”, just what we need. Now, the following code properly runs several tasks concurrently, including initializing the Telegram bot:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">nest_asyncio</span>
+<span class="n">nest_asyncio</span><span class="p">.</span><span class="nb">apply</span><span class="p">()</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">init_bot</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="bp">None</span><span class="p">:</span>
+    <span class="s">"""Start the bot."""</span>
+    <span class="c1"># on different commands - answer in Telegram
+</span>    <span class="n">cfg</span><span class="p">.</span><span class="n">application</span><span class="p">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">CommandHandler</span><span class="p">(</span><span class="s">"start"</span><span class="p">,</span> <span class="n">start</span><span class="p">))</span>
+    <span class="n">cfg</span><span class="p">.</span><span class="n">application</span><span class="p">.</span><span class="n">add_handler</span><span class="p">(</span><span class="n">CommandHandler</span><span class="p">(</span><span class="s">"stop"</span><span class="p">,</span> <span class="n">stop</span><span class="p">))</span>
+
+    <span class="c1"># Run the bot until the user presses Ctrl-C
+</span>    <span class="n">cfg</span><span class="p">.</span><span class="n">application</span><span class="p">.</span><span class="n">run_polling</span><span class="p">()</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>    
+    <span class="c1"># Create the Application and pass it your bot's token.    
+</span>    <span class="n">cfg</span><span class="p">.</span><span class="n">application</span> <span class="o">=</span> <span class="n">Application</span><span class="p">.</span><span class="n">builder</span><span class="p">().</span><span class="n">token</span><span class="p">(</span><span class="n">cfg</span><span class="p">.</span><span class="n">BOT_TOKEN</span><span class="p">).</span><span class="n">build</span><span class="p">()</span>    
+    <span class="c1">##equivalently, can do await task1, await task2, etc.
+</span>    <span class="k">await</span> <span class="n">asyncio</span><span class="p">.</span><span class="n">gather</span><span class="p">(</span>
+        <span class="n">asyncio</span><span class="p">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">track_eth_transfers</span><span class="p">()),</span>         
+        <span class="p">...</span>       
+        <span class="n">asyncio</span><span class="p">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">init_bot</span><span class="p">()),</span>
+    <span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>    
+    <span class="n">asyncio</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>    
+</code></pre></div></div>
+
+<p>With the Telegram bot set-up, in any coroutine function (such as <code class="language-plaintext highlighter-rouge">track_eth_transfers()</code>), we can send a message on the app:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">await</span> <span class="n">application</span><span class="p">.</span><span class="n">bot</span><span class="p">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">cfg</span><span class="p">.</span><span class="n">USER_ID</span><span class="p">,</span><span class="s">"Hello World"</span><span class="p">,</span><span class="n">parse_mode</span><span class="o">=</span><span class="n">telegram</span><span class="p">.</span><span class="n">constants</span><span class="p">.</span><span class="n">ParseMode</span><span class="p">.</span><span class="n">MARKDOWN_V2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="track-ethereum-activity">Track Ethereum Activity</h2>
+
+<p>The idea is to track ETH and ERC20 transfers from well-known informed market participants. To source wallet addresses, we often find data sleuths on Twitter doxx certain fund wallets, Nansen has a smart money labeling services, and Etherscan also provides tags for large exchange wallets. For instace, I found addresses related to Vitalik, Jump Trading, Ethereum Foundation, Three Arrows Capital, Wintermute, etc. (see my <a href="https://github.com/axucar/telegram-eth-alerts/blob/main/config.py">config.py</a> for more).</p>
+
+<p>Subscribing to JSON-RPC notifications for real-time events on Geth is called via <code class="language-plaintext highlighter-rouge">eth_subscribe</code> method which takes the subscription type as parameter. We will use <code class="language-plaintext highlighter-rouge">newHeads</code> for ETH transfers, and <code class="language-plaintext highlighter-rouge">logs</code> for ERC20 transfers (see <a href="https://geth.ethereum.org/docs/rpc/pubsub">Geth’s subscription docs</a>]).</p>
+
+<h3 id="eth-transfers">ETH Transfers</h3>
+
+<p>To subscribe to <code class="language-plaintext highlighter-rouge">newHeads</code> via WebSocket:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">await</span> <span class="n">websocket</span><span class="p">.</span><span class="n">send</span><span class="p">(</span><span class="n">json</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span>
+      <span class="p">{</span>
+          <span class="s">"id"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="s">"method"</span><span class="p">:</span> <span class="s">"eth_subscribe"</span><span class="p">,</span>
+          <span class="s">"params"</span><span class="p">:</span> <span class="p">[</span><span class="s">"newHeads"</span><span class="p">],</span>
+      <span class="p">}))</span>
+</code></pre></div></div>
+
+<p>Once subscribed, we await new messages which represent new Ethereum blocks being confirmed roughly every 10s, and use <code class="language-plaintext highlighter-rouge">brownie.web3</code> to fetch the transaction data for every transaction in the new block. From there, we just parse the data for the <code class="language-plaintext highlighter-rouge">to_address</code>, <code class="language-plaintext highlighter-rouge">from_address</code> , and <code class="language-plaintext highlighter-rouge">eth_transfer_value</code></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">message</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">websocket</span><span class="p">.</span><span class="n">recv</span><span class="p">())</span>                                  
+<span class="n">block_number</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">message</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"params"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"result"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"number"</span><span class="p">),</span><span class="mi">16</span><span class="p">)</span>                                        
+<span class="n">block_tx_data</span> <span class="o">=</span> <span class="n">brownie</span><span class="p">.</span><span class="n">web3</span><span class="p">.</span><span class="n">eth</span><span class="p">.</span><span class="n">get_block</span><span class="p">(</span><span class="n">block_number</span><span class="p">,</span><span class="n">full_transactions</span><span class="o">=</span><span class="bp">True</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"transactions"</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">tx_data</span> <span class="ow">in</span> <span class="n">block_tx_data</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">tx_data</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"to"</span><span class="p">):</span> <span class="k">continue</span> <span class="c1">#contract creation, skip                        
+</span>    
+    <span class="c1">##filter on transfer value   
+</span>    <span class="n">cfg</span><span class="p">.</span><span class="n">weth</span><span class="p">.</span><span class="n">update_price</span><span class="p">()</span>                                                
+    <span class="n">eth_transfer_value</span> <span class="o">=</span> <span class="n">tx_data</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"value"</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="mi">18</span><span class="p">)</span>
+    <span class="n">usd_transfer_value</span> <span class="o">=</span> <span class="n">eth_transfer_value</span><span class="o">*</span><span class="n">cfg</span><span class="p">.</span><span class="n">weth</span><span class="p">.</span><span class="n">price</span>
+    <span class="k">if</span> <span class="n">usd_transfer_value</span> <span class="o">&lt;=</span> <span class="n">usd_threshold</span><span class="p">:</span> <span class="k">continue</span>
+    
+    <span class="c1">##get to, from addresses
+</span>    <span class="n">tx_hash</span> <span class="o">=</span> <span class="n">tx_data</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"hash"</span><span class="p">).</span><span class="nb">hex</span><span class="p">()</span>
+    <span class="n">to_address</span> <span class="o">=</span> <span class="n">brownie</span><span class="p">.</span><span class="n">convert</span><span class="p">.</span><span class="n">to_address</span><span class="p">(</span><span class="n">tx_data</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"to"</span><span class="p">))</span>
+    <span class="n">from_address</span> <span class="o">=</span> <span class="n">brownie</span><span class="p">.</span><span class="n">convert</span><span class="p">.</span><span class="n">to_address</span><span class="p">(</span><span class="n">tx_data</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"from"</span><span class="p">))</span>
+    
+    <span class="c1">##MATCH "to" and "from"
+</span>    <span class="k">if</span> <span class="p">(</span><span class="n">to_address</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">.</span><span class="n">WALLETS_TRACKED</span><span class="p">):</span>
+        <span class="n">wallet</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">.</span><span class="n">WALLETS_TRACKED</span><span class="p">[</span><span class="n">to_address</span><span class="p">]</span>
+        <span class="n">sent_or_received</span> <span class="o">=</span> <span class="s">"received (+)"</span>
+    <span class="k">elif</span> <span class="p">(</span><span class="n">from_address</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">.</span><span class="n">WALLETS_TRACKED</span><span class="p">):</span>
+        <span class="n">wallet</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">.</span><span class="n">WALLETS_TRACKED</span><span class="p">[</span><span class="n">from_address</span><span class="p">]</span>
+        <span class="n">sent_or_received</span> <span class="o">=</span> <span class="s">"sent (-)"</span>
+    <span class="k">else</span><span class="p">:</span> <span class="k">continue</span>
+
+    <span class="n">output</span><span class="o">=</span><span class="sa">f</span><span class="s">'ETH Transfer </span><span class="si">{</span><span class="n">tx_hash</span><span class="si">}</span><span class="s">:</span><span class="si">{</span><span class="n">wallet</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">sent_or_received</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">eth_transfer_value</span><span class="si">}</span><span class="s"> ETH ($</span><span class="si">{</span><span class="n">usd_transfer_value</span><span class="p">:</span><span class="mi">0</span><span class="p">,.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">)'</span>
+</code></pre></div></div>
+
+<h3 id="erc20-token-transfers">ERC20 Token Transfers</h3>
+
+<p>Notice that while ETH transfers do not emit any logs (e.g. <a href="https://etherscan.io/tx/0xc46d4c8232a576352a1c31855264d7d3ab306233d315b0a05196eeccb9cfdb24">tx</a>), all ERC20 transfers emit <code class="language-plaintext highlighter-rouge">Transfer(index_topic_1 address from, index_topic_2 address to, uint256 value)</code> logs (e.g. <a href="https://etherscan.io/tx/0x9a6da392d493ba88581ce5b066da7285c9763565a33945d7b4c4c5491659c726#eventlog">tx</a>).</p>
+
+<p>When subscribing to <code class="language-plaintext highlighter-rouge">logs</code> of new imported blocks via WebSocket, we can optionally filter based on topics, by providing a list of 32-bytes keccak hash of the canonical event signatures you want to track (e.g. <code class="language-plaintext highlighter-rouge">brownie.web3.keccak(text="Transfer(address,address,uint256)").hex()</code> = <code class="language-plaintext highlighter-rouge">0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef</code>. In addition, we can specify <code class="language-plaintext highlighter-rouge">“address”</code> param to be a list of contract addresses, such that only logs created from these contracts will be shown. For our purpose, the contract addresses will correspond to our list of ERC20 token contract addresses (WETH, WBTC, DAI, USDC, etc.) defined in <a href="https://github.com/axucar/telegram-eth-alerts/blob/main/config.py">config.py</a>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>await websocket.send(json.dumps(
+      {
+          "id": 1,
+          "method": "eth_subscribe",
+          "params": ["logs",{
+              "topics": [brownie.web3.keccak(text="Transfer(address,address,uint256)").hex()],
+              "address": [*cfg.token_dict], #take advantage of log bloom; only show logs of tracked ERC20 tokens
+              }],
+      }))
+</code></pre></div></div>
+
+<p>Once we receive a message object, <code class="language-plaintext highlighter-rouge">message = json.loads(await websocket.recv())</code>, we find a JSON data structure like this (from this <a href="https://etherscan.io/tx/0x981eb1ce252f5cf10fc148a721384dd87ebb91f56659e60589b43550e29abcbd">transaction</a>).</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span>
+   <span class="s">"jsonrpc"</span><span class="p">:</span><span class="s">"2.0"</span><span class="p">,</span>
+   <span class="s">"method"</span><span class="p">:</span><span class="s">"eth_subscription"</span><span class="p">,</span>
+   <span class="s">"params"</span><span class="p">:{</span>
+      <span class="s">"subscription"</span><span class="p">:</span><span class="s">"0xed0150cfd7a647cf822c3a2e9821c535"</span><span class="p">,</span>
+      <span class="s">"result"</span><span class="p">:{</span>
+         <span class="s">"address"</span><span class="p">:</span><span class="s">"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"</span><span class="p">,</span>
+         <span class="s">"topics"</span><span class="p">:[</span>
+            <span class="s">"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"</span><span class="p">,</span>
+            <span class="s">"0x00000000000000000000000056178a0d5f301baf6cf3e1cd53d9863437345bf9"</span><span class="p">,</span>
+            <span class="s">"0x000000000000000000000000a57bd00134b2850b2a1c55860c9e9ea100fdd6cf"</span>
+         <span class="p">],</span>
+         <span class="s">"data"</span><span class="p">:</span><span class="s">"0x00000000000000000000000000000000000000000000000000001e875ab7ebdc"</span><span class="p">,</span>
+         <span class="s">"blockNumber"</span><span class="p">:</span><span class="s">"0xf7b8b0"</span><span class="p">,</span>
+         <span class="s">"transactionHash"</span><span class="p">:</span><span class="s">"0x981eb1ce252f5cf10fc148a721384dd87ebb91f56659e60589b43550e29abcbd"</span><span class="p">,</span>
+         <span class="s">"transactionIndex"</span><span class="p">:</span><span class="s">"0x0"</span><span class="p">,</span>
+         <span class="s">"blockHash"</span><span class="p">:</span><span class="s">"0x24701993af8d75e0da79a1e8b8b2ec37f11b92db06883901698ce5a025f609a9"</span><span class="p">,</span>
+         <span class="s">"logIndex"</span><span class="p">:</span><span class="s">"0x0"</span><span class="p">,</span>
+         <span class="s">"removed"</span><span class="p">:</span><span class="n">false</span>
+      <span class="p">}</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>The 20-byte address <code class="language-plaintext highlighter-rouge">0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48</code> is USDC, meaning it was a transfer of such tokens. The first element <code class="language-plaintext highlighter-rouge">topics[0]</code> corresponds to the keccak hash of canonical <code class="language-plaintext highlighter-rouge">Transfer(address from,address to,uint256 value)</code> signature we saw earlier. The second and third topics <code class="language-plaintext highlighter-rouge">topics[1], topics[2]</code> are the parameters <code class="language-plaintext highlighter-rouge">index_topic_1 address from, index_topic_2 address to</code> . There can only be up to three 32-byte topics in the array. Hence, whatever parameters remain go to the <code class="language-plaintext highlighter-rouge">data</code> param (padded to 32 bytes and concatenated) <code class="language-plaintext highlighter-rouge">0x00000000000000000000000000000000000000000000000000001e875ab7ebdc</code> , which in this case corresponds to the <code class="language-plaintext highlighter-rouge">uint256 value</code> of the transfer; the hex decodes to 33566691421148 units of tokens = 33,566,691.421148 USDC.</p>
+
+<p>Similar to the tracker function for ETH transfers, we parse the data for the <code class="language-plaintext highlighter-rouge">to_address</code>, <code class="language-plaintext highlighter-rouge">from_address</code> , and <code class="language-plaintext highlighter-rouge">usd_transfer_value</code> as below:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">message</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="n">loads</span><span class="p">(</span><span class="k">await</span> <span class="n">websocket</span><span class="p">.</span><span class="n">recv</span><span class="p">())</span>   
+<span class="n">erc20_address</span> <span class="o">=</span> <span class="n">brownie</span><span class="p">.</span><span class="n">convert</span><span class="p">.</span><span class="n">to_address</span><span class="p">(</span><span class="n">message</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"params"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"result"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"address"</span><span class="p">))</span>
+
+<span class="c1">##filter on transfer value               
+</span><span class="n">token</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">.</span><span class="n">token_dict</span><span class="p">[</span><span class="n">erc20_address</span><span class="p">]</span>
+<span class="n">token</span><span class="p">.</span><span class="n">update_price</span><span class="p">()</span>
+<span class="n">event_data</span> <span class="o">=</span> <span class="n">message</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"params"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"result"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"data"</span><span class="p">)</span>
+<span class="n">transfer_value</span> <span class="o">=</span> <span class="n">eth_abi</span><span class="p">.</span><span class="n">decode_single</span><span class="p">(</span><span class="s">"uint256"</span><span class="p">,</span><span class="nb">bytes</span><span class="p">.</span><span class="n">fromhex</span><span class="p">(</span><span class="n">event_data</span><span class="p">[</span><span class="mi">2</span><span class="p">:]))</span> <span class="c1">#Data for Transfer events is only wad                        
+</span><span class="n">usd_transfer_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">transfer_value</span><span class="o">/</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">token</span><span class="p">.</span><span class="n">decimals</span><span class="p">))</span><span class="o">*</span><span class="n">token</span><span class="p">.</span><span class="n">price</span>
+<span class="k">if</span> <span class="n">usd_transfer_value</span> <span class="o">&lt;=</span> <span class="n">usd_threshold</span><span class="p">:</span> <span class="k">continue</span>
+
+<span class="c1">##get to, from addresses
+</span><span class="n">tx_hash</span> <span class="o">=</span> <span class="n">message</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"params"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"result"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"transactionHash"</span><span class="p">)</span>
+<span class="n">_</span> <span class="p">,</span> <span class="n">raw_from_address</span><span class="p">,</span> <span class="n">raw_to_address</span> <span class="o">=</span> <span class="n">message</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"params"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"result"</span><span class="p">).</span><span class="n">get</span><span class="p">(</span><span class="s">"topics"</span><span class="p">)</span>
+<span class="n">to_address</span> <span class="o">=</span> <span class="n">brownie</span><span class="p">.</span><span class="n">convert</span><span class="p">.</span><span class="n">to_address</span><span class="p">(</span><span class="n">eth_abi</span><span class="p">.</span><span class="n">decode_single</span><span class="p">(</span><span class="s">"address"</span><span class="p">,</span><span class="nb">bytes</span><span class="p">.</span><span class="n">fromhex</span><span class="p">(</span><span class="n">raw_to_address</span><span class="p">[</span><span class="mi">2</span><span class="p">:])))</span>
+<span class="n">from_address</span> <span class="o">=</span> <span class="n">brownie</span><span class="p">.</span><span class="n">convert</span><span class="p">.</span><span class="n">to_address</span><span class="p">(</span><span class="n">eth_abi</span><span class="p">.</span><span class="n">decode_single</span><span class="p">(</span><span class="s">"address"</span><span class="p">,</span><span class="nb">bytes</span><span class="p">.</span><span class="n">fromhex</span><span class="p">(</span><span class="n">raw_from_address</span><span class="p">[</span><span class="mi">2</span><span class="p">:])))</span>
+
+<span class="c1">##MATCH "to" or "from"
+</span><span class="k">if</span> <span class="p">(</span><span class="n">to_address</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">.</span><span class="n">WALLETS_TRACKED</span><span class="p">):</span>
+    <span class="n">wallet</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">.</span><span class="n">WALLETS_TRACKED</span><span class="p">[</span><span class="n">to_address</span><span class="p">]</span>
+    <span class="n">sent_or_received</span> <span class="o">=</span> <span class="s">"received (+)"</span>
+<span class="k">elif</span> <span class="p">(</span><span class="n">from_address</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">.</span><span class="n">WALLETS_TRACKED</span><span class="p">):</span>
+    <span class="n">wallet</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">.</span><span class="n">WALLETS_TRACKED</span><span class="p">[</span><span class="n">from_address</span><span class="p">]</span>
+    <span class="n">sent_or_received</span> <span class="o">=</span> <span class="s">"sent (-)"</span>
+<span class="k">else</span><span class="p">:</span> <span class="k">continue</span>
+
+<span class="n">output</span><span class="o">=</span><span class="sa">f</span><span class="s">'ERC20 Transfer </span><span class="si">{</span><span class="n">tx_hash</span><span class="si">}</span><span class="s">:</span><span class="si">{</span><span class="n">wallet</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">sent_or_received</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">transfer_value</span><span class="o">/</span><span class="mi">10</span><span class="o">**</span><span class="n">token</span><span class="p">.</span><span class="n">decimals</span><span class="si">}</span><span class="s"> </span><span class="si">{</span><span class="n">token</span><span class="p">.</span><span class="n">symbol</span><span class="si">}</span><span class="s"> ($</span><span class="si">{</span><span class="n">usd_transfer_value</span><span class="p">:</span><span class="mi">0</span><span class="p">,.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">)'</span>
+</code></pre></div></div>
+
+<h2 id="bloom-filters-for-ethereum-logs">Bloom Filters for Ethereum Logs</h2>
+
+<p>One thing to consider is that while the <code class="language-plaintext highlighter-rouge">newHeads</code> method simply returns all the transactions in a block, the <code class="language-plaintext highlighter-rouge">logs</code> subscription method has much more data to filter through, since one transaction may contain tens of logs. Ethereum efficiently searches through all the logs across a block’s transactions by computing (per block) a fixed-size 2048-bit bloom filter (0s and 1s), usually represented in 512 hexadecimal characters (256-bytes). Bloom filters save time when checking for membership in a set (e.g. <em>Did any USDC transfers happen in this block?</em>), as we will demonstrate below.</p>
+
+<p>The main idea is to set certain indices of a 2048-bit array to 1, based on hashes of the log data, keeping the remaining bits at 0. For instance, let’s say hashing the USDC contract address gives a hash that implies setting the first 3 indices to 1. If the next block’s bloom filter is anything other than 111….. (say 011….. or 001…..) we can safely conclude there are no USDC transfers in the <em>entire</em> block. Formally, bloom filters reduce membership checks to \(O(1)\) time instead of \(O(N)\), using only \(O(1)\) space (in fact, just 2048-bits). It may have false positives (e.g. if hash of WBTC contract address also sets the first 3 indices to 1, USDC and WBTC logs are indistinguishable), but more importantly no false negatives.</p>
+
+<p>We can query for a block’s bloom filter in Python as such: <code class="language-plaintext highlighter-rouge">bloom_filter_hex=brownie.web3.eth.get_block(16234672)["logsBloom"].hex()</code></p>
+
+<p>For instance, block 16234672 has the following bloom filter in hex format:</p>
+
+<p><code class="language-plaintext highlighter-rouge">bloom_filter_hex</code>=<code class="language-plaintext highlighter-rouge">0x76a0c119e9d0d5197813b902c2d3162d82252da45b1f18d0a085b5304ca178e5580f27c3984a0452e0685f324a8699bd022181011e1568a04e54d881176ee93a28a3f18cd1a2f9ee7f06aaadc790c068fa1db091855712e149e27e4a8800d83c17b851853ac253d3cd14819098618de383d65d7248546fc2220bd3d048dde15413b08a534f23309c2d4d0eca2146810569878081956d8489473d8cc1faba18f1bb7a894f50c96893ed1dc0d68044eeaacaff52ac8aa3c15b0def2e8a85b942f94d63ec5b98344b49e8485a40c0076b3c95597f4311ac4ddb5a06d92b4d6ffa1138bcafa8a9666f27649670f4b00619475c3d70f54bb82060636b9e11e403d962</code></p>
+
+<p>To construct a bloom filter, start with 2048-bits all set to 0. Then, for each address and topic in every event log in this block’s transactions, we set 3 bits to 1 (based on some hashes and modulo functions we will show below). For visualization purposes, we convert the hex representation of the above <code class="language-plaintext highlighter-rouge">bloom_filter_hex</code> to binary, made up of 2048-bits.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">## we subtract 2 from `len(bloom_filter_hex)` to account for the 0x prefix in the hexstring.
+</span><span class="n">bloom_filter</span> <span class="o">=</span> <span class="nb">bin</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">bloom_filter_hex</span><span class="p">,</span> <span class="mi">16</span><span class="p">))[</span><span class="mi">2</span><span class="p">:].</span><span class="n">zfill</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">bloom_filter_hex</span><span class="p">)</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre></div></div>
+<p>Print bloom filter (in full 2048 binary glory):
+<code class="language-plaintext highlighter-rouge">01110110101000001100000100011001111010011101000011010101000110010111100000010011101110010000001011000010110100110001011000101101100000100010010100101101101001000101101100011111000110001101000010100000100001011011010100110000010011001010000101111000111001010101100000001111001001111100001110011000010010100000010001010010111000000110100001011111001100100100101010000110100110011011110100000010001000011000000100000001000111100001010101101000101000000100111001010100110110001000000100010111011011101110100100111010001010001010001111110001100011001101000110100010111110011110111001111111000001101010101010101101110001111001000011000000011010001111101000011101101100001001000110000101010101110001001011100001010010011110001001111110010010101000100000000000110110000011110000010111101110000101000110000101001110101100001001010011110100111100110100010100100000011001000010011000011000011000110111100011100000111101011001011101011100100100100001010100011011111100001000100010000010111101001111010000010010001101110111100001010101000001001110110000100010100101001101001111001000110011000010011100001011010100110100001110110010100010000101000110100000010000010101101001100001111000000010000001100101010110110110000100100010010100011100111101100011001100000111111010101110100001100011110001101110110111101010001001010011110101000011001001011010001001001111101101000111011100000011010110100000000100010011101110101010101100101011111111010100101010110010001010101000111100000101011011000011011110111100101110100010101000010110111001010000101111100101001101011000111110110001011011100110000011010001001011010010011110100001001000010110100100000011000000000001110110101100111100100101010101100101111111010000110001000110101100010011011101101101011010000001101101100100101011010011010110111111111010000100010011100010111100101011111010100010101001011001100110111100100111011001001001011001110000111101001011000000000110000110010100011101011100001111010111000011110101010010111011100000100000011000000110001101101011100111100001000111100100000000111101100101100010</code></p>
+
+<p>Let’s denote a transaction log entry as $O \equiv (O_a, O_{\textbf{t}}, O_{\textbf{d}})$, where  $O_a$ is the 20-byte address that generates the logs (USDC token contract address in the example above), and \(O_{\textbf{t}} = (O_{\text{t}_0},O_{\text{t}_1},O_{\text{t}_2})\) as the list of three 32-byte log topics (see the JSON <code class="language-plaintext highlighter-rouge">message</code> object in the previous section). Besides the logger’s address and three indexed topics, we might have some additional non-indexed data $O_{\textbf{d}}$ which is not relevant to computing the filter.</p>
+
+<p>To be precise, we quote the Bloom filter $M(O)$ definition for a single transaction log \(O\) from the <a href="https://ethereum.github.io/yellowpaper/paper.pdf">Ethereum Yellow Paper</a>.</p>
+
+\[M(O)\equiv \bigvee_{x \in \{ O_a \} \cup O_{\textbf{t}}} (M_{3:2048}(x))\]
+
+<p>where $\bigvee$ can be understood as the bitwise maximum of the various 2048-bit $M_{3:2048}(x)$ objects corresponding to each piece of log data (logger’s contract address and topics). For instance, let the binary representation of two 4-bit bloom filters $y_1=0101_2$, $y_2=1010_2$. Then, $\bigvee {y_1, y_2} = 1111_2$. The $\bigvee$ operation can also be applied across all transaction logs in a block to arrive at a bloom filter summarizing the entire block’s logs (of course, increases false positive rate).</p>
+
+\[\begin{align}
+M_{3:2048}(\textbf{x}:\textbf{x} \in \mathbb{B}) &amp;\equiv \textbf{y}:\textbf{y} \in \mathbb{B}_{256} &amp;\text{ where:} \\
+\textbf{y} &amp;= (0,0,...,0) &amp;\text{ except:}\\
+\forall i \in \{0,2,4\} &amp;: \mathcal{B}_{2047-m(\textbf{x},i)}(\textbf{y}) = 1\\
+m(\textbf{x},i) &amp;\equiv \texttt{KEC}(\text{x})[i,i+1] \text{ mod 2048}
+\end{align}\]
+
+<p>where $\mathbb{B}$ refers to bytes, and $\mathcal{B}$ is “the bit reference function” such that \(\mathcal{B}_{j}(\textbf{y})\) equals the bit indexed at $j$ (indexed from 0) in the (2048-bit) 256-byte array $\textbf{y}$. To make things concrete, let’s actually calculate $y=M_{3:2048}(x)$ where $x=O_a$, the logger’s address USDC contract. Note that $x$ represents a piece of log information (address or topic), and $y$ represents its Bloom filter.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">usdc_contract_address</span><span class="o">=</span><span class="s">'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'</span> <span class="c1">## refers to x=O_a 
+</span><span class="n">kec_x</span> <span class="o">=</span> <span class="n">brownie</span><span class="p">.</span><span class="n">web3</span><span class="p">.</span><span class="n">keccak</span><span class="p">(</span><span class="n">hexstr</span><span class="o">=</span><span class="n">usdc_contract_address</span><span class="p">).</span><span class="nb">hex</span><span class="p">()</span>
+</code></pre></div></div>
+<p>$\texttt{KEC}(x)$ = <code class="language-plaintext highlighter-rouge">'0x7b5855bb92cd7f3f78137497df02f6ccb9badda93d9782e0f230c807ba728be0'</code></p>
+
+<p>Then, we take “each of the first three pairs of bytes” of the keccak hash $\texttt{KEC}(x)$ (ie. three 4-hex-character chunks), convert to base-10 integers, then modulo each by \(2048\). Note that each 2-byte chunk is capable of expressing 16 bits, ie. up to \(2^{16} = 65536\) numbers, but we only take the “low-order 11 bits of each” out of the 16 bits expressed, since we modulo by \(2048=2^{11}\).</p>
+
+<ul>
+  <li>$m(x,0)$ = <code class="language-plaintext highlighter-rouge">int('0x7b58',16) % 2048 =856</code>
+</li>
+  <li>$m(x,2)$ = <code class="language-plaintext highlighter-rouge">int('0x55bb',16) % 2048 =1467</code>
+</li>
+  <li>$m(x,4)$ =<code class="language-plaintext highlighter-rouge">int('0x92cd',16) % 2048 =717</code>
+</li>
+</ul>
+
+<p>Finally set bits at the indices $2047-m(x,i)=1191, 580, 1330$, respectively. Hence, we set \(\mathcal{B}_{1191}(y)=\mathcal{B}_{580}(y)=\mathcal{B}_{1330}(y)=1\). To verify our work, we notice that indeed <code class="language-plaintext highlighter-rouge">bloom_filter[index]</code> for <code class="language-plaintext highlighter-rouge">index</code> in [1191,580,1330] are set to 1!! This indicates that there is definitely a log produced by the USDC contract.</p>
+
+<p>Finally, we can repeat this exercise with the log topics \(x = O_{\textbf{t}_i}\), and again computing $M_{3:2048}(x)$ to continue setting more bits to 1 in the bloom filter.</p>
+
+<blockquote>
+  <p><img class="emoji" title=":warning:" alt=":warning:" src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png" height="20" width="20"> For log topics $O_\textbf{t}$, they must be zero-padded to be 32-bytes, before running keccak hash on them, as specified by Yellow Paper. For this transaction, we would replace $x$ with one of the below topics</p>
+</blockquote>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="s">"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"</span><span class="p">,</span> <span class="c1">## event signature "Transfer(address,address,uint256)"
+</span><span class="s">"0x00000000000000000000000056178a0d5f301baf6cf3e1cd53d9863437345bf9"</span><span class="p">,</span> <span class="c1">## "from" address
+</span><span class="s">"0x000000000000000000000000a57bd00134b2850b2a1c55860c9e9ea100fdd6cf"</span><span class="p">,</span> <span class="c1">## "to" address
+</span></code></pre></div></div>
+
+<p>Once we have this block’s bloom filter (repeat exercise for all transactions), instead of looping through \(N\) transaction logs in a block, we can efficiently check whether this block has any USDC transfer logs by verifying that the block’s <code class="language-plaintext highlighter-rouge">bloom_filter[index]==1</code> at the appropriate indices.</p>
+
+  </div>
+
+  
+
+</article>
+
+      </div>
+    </main>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <p>
+      </p>
+<p style="font-size: 10px">Carlos Xu © <script>document.write(new Date().getFullYear());</script>
+
+
+    </p>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
