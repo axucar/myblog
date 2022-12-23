@@ -6,39 +6,38 @@ categories:
 ---
 * TOC 
 {:toc}
-We implement a service that tracks well-known Ethereum wallets, and sends alerts of real-time ETH or ERC20 token transfers via Telegram, using Python's `asyncio` and `websockets` libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs.
+We implement a service that tracks well-known Ethereum wallets, and sends real-time alerts of ETH and ERC20 token transfers via Telegram, using Python's `asyncio` and `websockets` libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs.
 
 ## Prerequisites
 ### `asyncio` library
 
-Our messaging service will rely on running asynchronous code, since the Telegram bot will wait on external Ethereum events. Python's [`asyncio`](https://docs.python.org/3/library/asyncio.html) is an indispensible library that enables running concurrent code using `async def`/`await` syntax. Here we'll cover the basics of `async def`, `await`, event loops, coroutines, and tasks, which will be enough for the purpose of building our Telegram bot.
+Our messaging service will rely on running asynchronous code, since the Telegram bot will wait on external Ethereum events. Python's [`asyncio`](https://docs.python.org/3/library/asyncio.html) is a library that enables running concurrent code using `async def`/`await` syntax. We cover the basics of `async def`, `await`, event loops, coroutines, and tasks, which will suffice for the purpose of building our Telegram bot.
 
 Before diving into syntax, it is conceptually important to emphasize the distinction between **concurrency** and **parallelism** (`asyncio` implements the former, but not the latter). This library does not make code multi-threaded or sidestep the global interpreter lock (GIL), a mutex which prevents race conditions from multiple threads simultaneously accessing the same Python objects.
 
-Instead, consider the following cooking analogy. Concurrency is one restaurant chef preparing a soup, while also cutting vegetables. When waiting for the water to boil for the soup, the chef can work on cutting some the vegetables. Once the water is boiling, the chef might stop cutting vegetables and work on adding several ingredients to the soup. Then, the chef continues might cut more vegetables while waiting for the soup to boil once again. 
-- Removing concurrency would mean preparing the soup from start to finish, then cutting vegetables only after the soup has been served (very inefficient). 
+Consider the following cooking analogy. Concurrency is one restaurant chef preparing a soup, while also cutting vegetables. While waiting for the water to boil for the soup, the chef can work on cutting some the vegetables. Once the water is boiling, the chef might stop cutting vegetables and work on adding several ingredients to the soup. Then, the chef might continue to cut more vegetables while waiting for the soup to boil once again. 
+- Removing concurrency would mean preparing the soup from start to finish, then starting to cut vegetables only after the soup has been served (very inefficient, lots of idle time). 
 - Concurrency is still one chef doing one thing at a time, but allows switching back and forth between several tasks.
 - Parallelism, on the other hand, is having *two* chefs in the kitchen, one working on the soup, and the other working on cutting vegetables.
 - As this very helpful [BBC multi-part series on asyncio](https://bbc.github.io/cloudfit-public-docs/asyncio/asyncio-part-1.html) states, “It’s not about using multiple cores, it’s about using a single core more efficiently”
 
 When processes are spending most of the time using CPU resources (say, doing lots of arithmetic calculations like training a neural net), `asyncio` is not useful. Instead, it should be used when processes are IO-bound, meaning most of the time is spent sending and receiving data.
 
-Indeed, building a Telegram bot tracking Ethereum activity is heavily IO-bound, as new blocks of transactions confirm only (roughly) every 10 second-interval. While waiting to receive transaction data and event logs, our CPU could be working on executing other tasks, such as parsing received data and sending updates on Telegram.
+Indeed, building a Telegram bot tracking Ethereum activity is heavily IO-bound, as new blocks of transactions confirm only (roughly) every 10 second-interval. While waiting to receive new transaction data and logs, our CPU could be executing other tasks, such as parsing received data and sending updates on Telegram.
 
 **Event Loop** 
 
-`asyncio` revolves around an **event loop** which consists of a list of **tasks**, which are thin wrappers around **coroutines**, which are functions amenable to concurrent execution, such as cooking soup and cutting vegetables. where execution is allowed to bounce back and forth between them. 
+The `asyncio` methods revolve around an **event loop**. A list of **tasks** is added to the loop; each task is a wrapper around a **coroutine**, a function amenable to concurrent execution, such as cooking soup and cutting vegetables. Execution is then allowed to bounce back and forth between several coroutines. 
 
-- Firstly, event loops can only have one coroutine *actually* executing (using CPU) at once. The coroutine executes as if in a normal (synchronous) program, until it needs to **await** (for something like I/O from a node), at which point the coroutine yields control back to event loop. The event loop pauses the current task, and looks for other tasks to execute in the meantime.
+- Firstly, event loops can only have one coroutine *actually* executing (using CPU) at once. The coroutine executes as if in a normal (synchronous) program, until it needs to **await** (for something like I/O from the node), at which point the coroutine yields control back to event loop. The event loop pauses the current task, and looks for other tasks to execute in the meantime.
 - Secondly, event loops cannot interrupt the current, executing coroutine . The event loop must wait until the coroutine yields control (due to awaiting some I/O), before switching to another task. 
 > :bulb: To prematurely yield control back to the event loop, use `await asyncio.sleep(0)` inside the coroutine, which interrupts the current executing coroutine to work on other ones -- assuming there are other pending coroutines (tasks) 
 
 **Coroutines**
 
-To declare a coroutine function, we use `async def` instead of the usual `def`. Inside such asynchronous functions, we can make use of special keywords like `await` and `async for` (see [`websockets`](#websockets-library) section).
+To declare a coroutine function, we use `async def` instead of the usual `def`. Inside such asynchronous functions, we can make use of special keywords like `await` and `async for` (as seen in the [`websockets`](#websockets-library) section).
 
-Unlike regular synchronous functions, coroutines do *not* execute when called: if we don’t specify `await` , a coroutine does not run at all! However, `await` can only be used on coroutines within an asynchronous code blocks. To run a coroutine in a synchronous context, we pass the coroutine instance to `asyncio.run()`. Note that `asyncio.run()` starts a new event loop, so one cannot call nest calls to `asyncio.run()` since it would mean starting a new event loop within another.
-
+Unlike regular synchronous functions, coroutines do *not* execute when called: if we don’t specify `await` , a coroutine does not run at all! However, `await` can only be used on coroutines within asynchronous code blocks. To run a coroutine in a synchronous context, we pass the coroutine instance to `asyncio.run()`. 
 
 ```python
 async def example_coroutine(a,b):
@@ -76,11 +75,11 @@ world
 finished at 22:14:38
 ```
 
-Notice that the above example does *not* exhibit concurrency at all. It printed “hello” after 1 second, then printed “world” after *another* 2 seconds. Not that impressive.
+Notice that the above example does *not* exhibit concurrency at all. It printed “hello” after 1 second, then printed “world” after *another* 2 seconds. Not concurrent execution. Not impressive. 
 
 **Tasks**
 
-To properly run coroutines concurrently, we need to wrap coroutines as **tasks** to allow coroutines to run concurrently in an event loop, using `asyncio.create_task(coro)` which takes a coroutine object as the parameter and returns a `Task` object (inherits `asyncio.Future` which is a low-level awaitable object with a `done()` boolean and `result()` property) . 
+To properly run these coroutines, we need to wrap them as **tasks** to allow coroutines to run concurrently in an event loop, using `asyncio.create_task(coro)` which takes a coroutine object as the parameter and returns a `Task` object (which inherits `asyncio.Future`, a low-level awaitable object with a `done()` boolean and `result()` property) . 
 
 ```python
 async def main():
@@ -112,9 +111,9 @@ async for websocket in websockets.connect(uri=brownie.web3.provider.endpoint_uri
     ...
 ```
 
-where `brownie.web3.provider` is a `web3.providers.websocket.WebsocketProvider` object and `uri=brownie.web3.provider.endpoint_uri` might be `ws://localhost:3334`, or whatever you set in `~/.brownie/network-config.yaml` as seen in the section on [bot setup](#telegram-bot). 
+where `uri=brownie.web3.provider.endpoint_uri` might be `ws://localhost:3334`, or whatever you set in `~/.brownie/network-config.yaml` as seen in the section on [bot setup](#telegram-bot). 
 
-This usage of `websockets.connect` is an example of infinite asynchronous iterators, which allows us to reconnect automatically on errors (see [websockets docs](https://websockets.readthedocs.io/en/stable/reference/client.html#websockets.client.connect)). The iterable represents a source of data which can be looped over, in this case the source of data is an iterable object is called `websocket`. Then, to asynchronously interact with the Ethereum node, we use `await websocket.send()` to send a message and `await websocket.recv()` to receive the next message. 
+This usage of `websockets.connect` is an example of infinite asynchronous iterators, which allows us to reconnect automatically on errors (see [websockets docs](https://websockets.readthedocs.io/en/stable/reference/client.html#websockets.client.connect)). The iterable represents a source of data which can be looped over. In this case, the source of data is an iterable object is called `websocket`. Then, to asynchronously interact with the Ethereum node, we use `await websocket.send()` to send a message and `await websocket.recv()` to receive the next message. 
 
 
 ## Telegram Bot
@@ -156,7 +155,7 @@ live:
     provider: localnode
 ```
 
-**Nested event loops using `nest-asyncio`**
+**Using `nest-asyncio`**
 
 One tricky part of this project is combining the Telegram bot application with the activity-tracking coroutines. We want to concurrently listen to user commands on Telegram (.e.g `\start` and `\stop`), while also concurrently listening to our Ethereum node for activity. Consider the following code:
 
@@ -174,7 +173,7 @@ if __name__ == "__main__":
 
 The line `application.run_polling()` initializes the Telegram bot which listens for commands and messages we send to it, and only shuts down when we press Ctrl-C to interrupt the process. Therefore, `asyncio.run(track_eth_transfers())`, which subscribes to the node's WebSocket for activity tracking, starts only after the bot is shut-down (with Ctrl-C).
 
-The solution is to also make initializing the bot a coroutine, so it can be run concurrently with `track_eth_transfers()` coroutine. Consider making `init_bot()` a coroutine as such:
+The solution is to also make initializing the bot a coroutine, so it can be run concurrently with the `track_eth_transfers()` coroutine. Consider making `init_bot()` a coroutine as such:
 
 ```python
 async def init_bot() -> None:
@@ -194,7 +193,7 @@ def main():
 if __name__ == "__main__":    
     main()
 ```
-Unfortunately, `application.run_polling()` was meant to be started from a purely synchronous context, not in an asynchronous context as a coroutine. In fact, the above code errors with `RuntimeError: This event loop is already running`. The reason is that `application.run_polling()` calls `asyncio.get_event_loop().run_until_complete(...)`, which checks whether the event loop is already running. Indeed, `asyncio.run(...)` had already created an event loop and called `loop.run_until_complete(...)`, so inevitably the event loop was already running. This error is detailed in this [StackOverflow post](https://stackoverflow.com/questions/46827007/runtimeerror-this-event-loop-is-already-running-in-python).
+Unfortunately, `application.run_polling()` was meant to be started from a purely synchronous context, not in an asynchronous context as a coroutine. In fact, the above code errors with `RuntimeError: This event loop is already running`. The reason is that `application.run_polling()` calls `asyncio.get_event_loop().run_until_complete(...)`, which checks whether the event loop is already running. Indeed, `asyncio.run(...)` had already created an event loop and called `loop.run_until_complete(...)` as well, so inevitably the event loop was already running. This error is detailed in this [StackOverflow post](https://stackoverflow.com/questions/46827007/runtimeerror-this-event-loop-is-already-running-in-python).
 
 In short, `asyncio` by default does not allow an event loop to be started when the event loop has already been started (event loop is "re-entered"). To override this check, and allow `run_until_complete()` to be called, while `run_until_complete()` is already on the callstack, we can use `nest_asyncio`. As the [docs](https://pypi.org/project/nest-asyncio/) state, "the `nest_asyncio` module patches asyncio to allow nested use of `asyncio.run` and `loop.run_until_complete`", just what we need. Now, the following code properly runs several tasks concurrently, including initializing the Telegram bot:
 
@@ -232,7 +231,7 @@ await application.bot.send_message(cfg.USER_ID,"Hello World",parse_mode=telegram
 
 ## Track Ethereum Activity
 
-The idea is to track ETH and ERC20 transfers from well-known informed market participants. To source wallet addresses, we often find data sleuths on Twitter doxx certain fund wallets, Nansen has a smart money labeling services, and Etherscan also provides tags for large exchange wallets. For instace, I found addresses related to Vitalik, Jump Trading, Ethereum Foundation, Three Arrows Capital, Wintermute, etc. (see my [config.py](https://github.com/axucar/telegram-eth-alerts/blob/main/config.py) for more).
+The main purpose of this project is to track ETH and ERC20 transfers from well-known informed market participants. To source wallet addresses, we can look to Twitter accounts that have doxxed certain fund wallets, Nansen which has a smart money labeling services, and Etherscan also provides tags for large exchange wallets. For instance, I found addresses related to Vitalik, Jump Trading, Ethereum Foundation, Three Arrows Capital, Wintermute, and others (see my [config.py](https://github.com/axucar/telegram-eth-alerts/blob/main/config.py) for more).
 
 Subscribing to JSON-RPC notifications for real-time events on Geth is called via `eth_subscribe` method which takes the subscription type as parameter. We will use `newHeads` for ETH transfers, and `logs` for ERC20 transfers (see [Geth's subscription docs](https://geth.ethereum.org/docs/rpc/pubsub)]).
 
@@ -249,7 +248,7 @@ await websocket.send(json.dumps(
       }))
 ```
 
-Once subscribed, we await new messages which represent new Ethereum blocks being confirmed roughly every 10s, and use `brownie.web3` to fetch the transaction data for every transaction in the new block. From there, we just parse the data for the `to_address`, `from_address` , and `eth_transfer_value`
+Once subscribed, we await new messages which represent new Ethereum blocks being confirmed roughly every 10s, and use `brownie.web3` to fetch the transaction data for every transaction in the new block. From there, we just parse the data for the `to_address`, `from_address` , and `eth_transfer_value`.
 
 ```python
 message = json.loads(await websocket.recv())                                  
@@ -284,9 +283,9 @@ for tx_data in block_tx_data:
 
 ### ERC20 Token Transfers
 
-Notice that while ETH transfers do not emit any logs (e.g. [tx](https://etherscan.io/tx/0xc46d4c8232a576352a1c31855264d7d3ab306233d315b0a05196eeccb9cfdb24)), all ERC20 transfers emit `Transfer(index_topic_1 address from, index_topic_2 address to, uint256 value)` logs (e.g. [tx](https://etherscan.io/tx/0x9a6da392d493ba88581ce5b066da7285c9763565a33945d7b4c4c5491659c726#eventlog)).
+While ETH transfers do not emit any logs (e.g. [tx](https://etherscan.io/tx/0xc46d4c8232a576352a1c31855264d7d3ab306233d315b0a05196eeccb9cfdb24)), ERC20 transfers emit logs with signature `Transfer(index_topic_1 address from, index_topic_2 address to, uint256 value)` (e.g. [tx](https://etherscan.io/tx/0x9a6da392d493ba88581ce5b066da7285c9763565a33945d7b4c4c5491659c726#eventlog)).
 
-When subscribing to `logs` of new imported blocks via WebSocket, we can optionally filter based on topics, by providing a list of 32-bytes keccak hash of the canonical event signatures you want to track (e.g. `brownie.web3.keccak(text="Transfer(address,address,uint256)").hex()` = `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef`. In addition, we can specify `“address”` param to be a list of contract addresses, such that only logs created from these contracts will be shown. For our purpose, the contract addresses will correspond to our list of ERC20 token contract addresses (WETH, WBTC, DAI, USDC, etc.) defined in [config.py](https://github.com/axucar/telegram-eth-alerts/blob/main/config.py).
+When subscribing to `logs` of new imported blocks via WebSocket, we can optionally filter based on topics, by providing a list of 32-byte keccak hash of the canonical event signatures you want to track (e.g. `brownie.web3.keccak(text="Transfer(address,address,uint256)").hex()` = `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` is a well-known topic). In addition, we can specify an `“address”` param to be a list of contract addresses, such that only logs created from these contracts will be shown. For our purpose, the contract addresses will correspond to our list of ERC20 token contract addresses (WETH, WBTC, DAI, USDC, etc.) defined in [config.py](https://github.com/axucar/telegram-eth-alerts/blob/main/config.py).
 
 ```
 await websocket.send(json.dumps(
@@ -327,7 +326,7 @@ Once we receive a message object, `message = json.loads(await websocket.recv())`
 }
 ```
 
-The 20-byte address `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` is USDC, meaning it was a transfer of such tokens. The first element `topics[0]` corresponds to the keccak hash of canonical `Transfer(address from,address to,uint256 value)` signature we saw earlier. The second and third topics `topics[1], topics[2]` are the parameters `index_topic_1 address from, index_topic_2 address to` . There can only be up to three 32-byte topics in the array. Hence, whatever parameters remain go to the `data` param (padded to 32 bytes and concatenated) `0x00000000000000000000000000000000000000000000000000001e875ab7ebdc` , which in this case corresponds to the `uint256 value` of the transfer; the hex decodes to 33566691421148 units of tokens = 33,566,691.421148 USDC.
+The 20-byte address `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` is USDC's contract address, meaning it was a transfer of such tokens. The first element `topics[0]` corresponds to the keccak hash of the canonical `Transfer(address from,address to,uint256 value)` signature we saw earlier. The second and third topics `topics[1], topics[2]` are the parameters `index_topic_1 address from, index_topic_2 address to` . There can only be up to three 32-byte topics in the array. Hence, whatever parameters remain go to the `data` param (padded to 32 bytes and concatenated) `0x00000000000000000000000000000000000000000000000000001e875ab7ebdc` , which in this case corresponds to the `uint256 value` of the transfer; the hex decodes to 33566691421148 units of tokens = 33,566,691.421148 USDC.
 
 Similar to the tracker function for ETH transfers, we parse the data for the `to_address`, `from_address` , and `usd_transfer_value` as below:
 
@@ -363,11 +362,11 @@ output=f'ERC20 Transfer {tx_hash}:{wallet} {sent_or_received} {transfer_value/10
 
 ## Bloom Filters for Ethereum Logs
 
-One thing to consider is that while the `newHeads` method simply returns all the transactions in a block, the `logs` subscription method has much more data to filter through, since one transaction may contain tens of logs. Ethereum efficiently searches through all the logs across a block’s transactions by computing (per block) a fixed-size 2048-bit bloom filter (0s and 1s), usually represented in 512 hexadecimal characters (256-bytes). Bloom filters save time when checking for membership in a set (e.g. *Did any USDC transfers happen in this block?*), as we will demonstrate below. 
+One thing to consider is that while the `newHeads` method simply returns all the transactions in a block, the `logs` subscription method has much more data to filter through, since one transaction may contain tens of logs. An Ethereum client like Geth can efficiently search for relevant logs across a block’s transactions by computing (per block) a fixed-size 2048-bit bloom filter (0s and 1s), usually represented in 512 hexadecimal characters (256-bytes). Bloom filters save time when checking for membership in a set (e.g. *Did any USDC transfers happen in this block?*), as we will demonstrate below. 
 
-The main idea is to set certain indices of a 2048-bit array to 1, based on hashes of the log data, keeping the remaining bits at 0. For instance, let's say hashing the USDC contract address gives a hash that implies setting the first 3 indices to 1. If the next block's bloom filter is anything other than 111..... (say 011..... or 001.....) we can safely conclude there are no USDC transfers in the *entire* block. Formally, bloom filters reduce membership checks to $$O(1)$$ time instead of $$O(N)$$, using only $$O(1)$$ space (in fact, just 2048-bits). It may have false positives (e.g. if hash of WBTC contract address also sets the first 3 indices to 1, USDC and WBTC logs are indistinguishable), but more importantly no false negatives.
+The main idea is to set certain indices of a 2048-bit array to 1, based on hashes of a log entry's data, keeping the remaining bits at 0. For instance, let's say hashing the USDC contract address gives a hash that implies setting the first 3 indices to 1. If the next block's bloom filter is anything other than 111..... (say 011..... or 001.....) we can safely conclude there are no USDC transfers in the *entire* block. Formally, bloom filters reduce membership checks to $$O(1)$$ time instead of $$O(N)$$, using only $$O(1)$$ space (in fact, just 2048-bits). It may have false positives (e.g. if the hash of WBTC's contract address also happens to set the first 3 indices to 1, USDC and WBTC logs are indistinguishable to the bloom filter), but more importantly no false negatives.
 
-We can query for a block's bloom filter in Python as such: `bloom_filter_hex=brownie.web3.eth.get_block(16234672)["logsBloom"].hex()`
+Let's visualize this with a real example. We query a block's bloom filter in Python with: `bloom_filter_hex=brownie.web3.eth.get_block(16234672)["logsBloom"].hex()`
 
 For instance, block 16234672 has the following bloom filter in hex format:
 
@@ -382,7 +381,7 @@ bloom_filter = bin(int(bloom_filter_hex, 16))[2:].zfill((len(bloom_filter_hex)-2
 Print block 16234672's bloom filter (in full 2048-bit binary glory):
 `01110110101000001100000100011001111010011101000011010101000110010111100000010011101110010000001011000010110100110001011000101101100000100010010100101101101001000101101100011111000110001101000010100000100001011011010100110000010011001010000101111000111001010101100000001111001001111100001110011000010010100000010001010010111000000110100001011111001100100100101010000110100110011011110100000010001000011000000100000001000111100001010101101000101000000100111001010100110110001000000100010111011011101110100100111010001010001010001111110001100011001101000110100010111110011110111001111111000001101010101010101101110001111001000011000000011010001111101000011101101100001001000110000101010101110001001011100001010010011110001001111110010010101000100000000000110110000011110000010111101110000101000110000101001110101100001001010011110100111100110100010100100000011001000010011000011000011000110111100011100000111101011001011101011100100100100001010100011011111100001000100010000010111101001111010000010010001101110111100001010101000001001110110000100010100101001101001111001000110011000010011100001011010100110100001110110010100010000101000110100000010000010101101001100001111000000010000001100101010110110110000100100010010100011100111101100011001100000111111010101110100001100011110001101110110111101010001001010011110101000011001001011010001001001111101101000111011100000011010110100000000100010011101110101010101100101011111111010100101010110010001010101000111100000101011011000011011110111100101110100010101000010110111001010000101111100101001101011000111110110001011011100110000011010001001011010010011110100001001000010110100100000011000000000001110110101100111100100101010101100101111111010000110001000110101100010011011101101101011010000001101101100100101011010011010110111111111010000100010011100010111100101011111010100010101001011001100110111100100111011001001001011001110000111101001011000000000110000110010100011101011100001111010111000011110101010010111011100000100000011000000110001101101011100111100001000111100100000000111101100101100010`
 
-Let's denote a transaction log entry as $O \equiv (O_a, O_{\textbf{t}}, O_{\textbf{d}})$, where  $O_a$ is the 20-byte address that generates the logs (USDC token contract address in the example above), and $$O_{\textbf{t}} = (O_{\text{t}_0},O_{\text{t}_1},O_{\text{t}_2})$$ as the list of three 32-byte log topics (see the JSON `message` object in the previous section). Besides the logger’s address and three indexed topics, we might have some additional non-indexed data $O_{\textbf{d}}$ which is not relevant to computing the filter. 
+Let's denote a transaction log entry as $O \equiv (O_a, O_{\textbf{t}}, O_{\textbf{d}})$, where  $O_a$ is the 20-byte address that generates the logs (USDC token contract address in the example above), and $$O_{\textbf{t}} = (O_{\text{t}_0},O_{\text{t}_1},O_{\text{t}_2})$$ as the list of three 32-byte log topics (see the JSON `message` object in the previous section). Besides the logger’s address and three indexed topics, we might have some additional non-indexed data $O_{\textbf{d}}$ (e.g. value of transfer) which is not relevant to computing the filter. 
 
 To be precise, we quote the Bloom filter $M(O)$ definition for a single transaction log $$O$$ from the [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf).
 
@@ -390,7 +389,7 @@ $$
 M(O)\equiv \bigvee_{x \in \{ O_a \} \cup O_{\textbf{t}}} (M_{3:2048}(x))
 $$
 
-where $\bigvee$ can be understood as the bitwise maximum of the various 2048-bit $M_{3:2048}(x)$ objects corresponding to each piece of log data (logger's contract address and topics). For instance, let the binary representation of two 4-bit bloom filters $y_1=0101_2$, $y_2=1010_2$. Then, $\bigvee \{y_1, y_2\} = 1111_2$. The $\bigvee$ operation can also be applied across all transaction logs in a block to arrive at a bloom filter summarizing the entire block's logs (of course, increases false positive rate).
+where $\bigvee$ can be understood as the bitwise maximum of the various 2048-bit $M_{3:2048}(x)$ objects corresponding to each piece of log data (logger's contract address and up to three topics). For instance, let the binary representation of two 4-bit bloom filters $y_1=0101_2$, $y_2=1010_2$. Then, $\bigvee \{y_1, y_2\} = 1111_2$. The $\bigvee$ operation can also be applied across all transaction logs in a block to arrive at a bloom filter summarizing the entire block's logs (of course, doing this increases the filter's false positive rate).
 
 $$
 \begin{align}
@@ -409,13 +408,13 @@ kec_x = brownie.web3.keccak(hexstr=usdc_contract_address).hex()
 ```
  $\texttt{KEC}(x)$ = `'0x7b5855bb92cd7f3f78137497df02f6ccb9badda93d9782e0f230c807ba728be0'`
 
-Then, we take “each of the first three pairs of bytes” of the keccak hash $\texttt{KEC}(x)$ (ie. three 4-hex-character chunks), convert to base-10 integers, then modulo each by $$2048$$. Note that each 2-byte chunk is capable of expressing 16 bits, ie. up to $$2^{16} = 65536$$ numbers, but we only take the “low-order 11 bits of each” out of the 16 bits expressed, since we modulo by $$2048=2^{11}$$.
+Then, we take “each of the first three pairs of bytes” of the keccak hash $\texttt{KEC}(x)$ (ie. leftmost three 4-hex-character chunks), convert to base-10 integers, then modulo each by $$2048$$. Note that each 2-byte chunk is capable of expressing 16 bits, ie. up to $$2^{16} = 65536$$ numbers, but we only take the “low-order 11 bits of each” out of the 16 bits expressed, since we modulo by $$2048=2^{11}$$.
 
 - $m(x,0)$ = `int('0x7b58',16) % 2048 = 856`
 - $m(x,2)$ = `int('0x55bb',16) % 2048 = 1467`
 - $m(x,4)$ =`int('0x92cd',16) % 2048 = 717`
 
-Finally set bits at the indices $2047-m(x,i)=1191, 580, 1330$, respectively. Hence, we set $$\mathcal{B}_{1191}(y)=\mathcal{B}_{580}(y)=\mathcal{B}_{1330}(y)=1$$. To verify our work, we notice that indeed `bloom_filter[index]` for `index` in [1191,580,1330] are set to 1!! This indicates that there is definitely a log produced by the USDC contract.
+Finally set bits at the indices $2047-m(x,i)=1191, 580, 1330$, respectively. Hence, we set $$\mathcal{B}_{1191}(y)=\mathcal{B}_{580}(y)=\mathcal{B}_{1330}(y)=1$$. To verify our work, we notice that indeed `bloom_filter[index]` for `index` in [1191,580,1330] are set to 1!! This indicates that there is definitely a log produced by the USDC contract in this block.
 
 Finally, we can repeat this exercise with the log topics $$x = O_{\textbf{t}_i}$$, and again computing $M_{3:2048}(x)$ to continue setting more bits to 1 in the bloom filter.
 
