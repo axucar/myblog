@@ -6,7 +6,7 @@ categories:
 ---
 * TOC 
 {:toc}
-We implement a service that tracks well-known Ethereum wallets, and sends alerts via Telegram of real-time ETH or ERC20 token transfers, using Python's `asyncio` and `websockets` libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs.
+We implement a service that tracks well-known Ethereum wallets, and sends alerts of real-time ETH or ERC20 token transfers via Telegram, using Python's `asyncio` and `websockets` libraries. We subscribe to JSON-RPC events from a node over WebSocket connection, and parse transaction logs emitted by the events. We also give a concrete example of how a probabilistic data structure called bloom filter is used by the node to efficiently filter for relevant logs.
 
 ## Prerequisites
 ### `asyncio` library
@@ -35,7 +35,7 @@ Indeed, building a Telegram bot tracking Ethereum activity is heavily IO-bound, 
 
 **Coroutines**
 
-To declare a coroutine function, we use `async def` instead of the usual `def`. Inside such asynchronous functions, we can make use of special keywords like `await` and `async for` (see [`websockets`](#websockets)).
+To declare a coroutine function, we use `async def` instead of the usual `def`. Inside such asynchronous functions, we can make use of special keywords like `await` and `async for` (see [`websockets`](#websockets-library) section).
 
 Unlike regular synchronous functions, coroutines do *not* execute when called: if we don’t specify `await` , a coroutine does not run at all! However, `await` can only be used on coroutines within an asynchronous code blocks. To run a coroutine in a synchronous context, we pass the coroutine instance to `asyncio.run()`. Note that `asyncio.run()` starts a new event loop, so one cannot call nest calls to `asyncio.run()` since it would mean starting a new event loop within another.
 
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     main()
 ```
 
-The line `application.run_polling()` initializes the Telegram bot which listens for commands and messages we send to it, and only shuts down when we press Ctrl-C to interrupt the process. Therefore, `asyncio.run(track_eth_transfers()`, which subscribes to the node's WebSocket for activity tracking, starts only after the bot is shut-down (with Ctrl-C).
+The line `application.run_polling()` initializes the Telegram bot which listens for commands and messages we send to it, and only shuts down when we press Ctrl-C to interrupt the process. Therefore, `asyncio.run(track_eth_transfers())`, which subscribes to the node's WebSocket for activity tracking, starts only after the bot is shut-down (with Ctrl-C).
 
 The solution is to also make initializing the bot a coroutine, so it can be run concurrently with `track_eth_transfers()` coroutine. Consider making `init_bot()` a coroutine as such:
 
@@ -194,7 +194,7 @@ def main():
 if __name__ == "__main__":    
     main()
 ```
-However, `application.run_polling()` was meant to be started from a purely synchronous context, not meant in an asynchronous context as a coroutine. In fact, the above code errors with `RuntimeError: This event loop is already running`. The reason is that `application.run_polling()` calls `asyncio.get_event_loop().run_until_complete(...)`, which checks whether the event loop is already running. Indeed, `asyncio.run(...)` had already created an event loop and called `loop.run_until_complete(...)`, so inevitably the event loop was already running. This error is detailed in this [StackOverflow post](https://stackoverflow.com/questions/46827007/runtimeerror-this-event-loop-is-already-running-in-python).
+Unfortunately, `application.run_polling()` was meant to be started from a purely synchronous context, not in an asynchronous context as a coroutine. In fact, the above code errors with `RuntimeError: This event loop is already running`. The reason is that `application.run_polling()` calls `asyncio.get_event_loop().run_until_complete(...)`, which checks whether the event loop is already running. Indeed, `asyncio.run(...)` had already created an event loop and called `loop.run_until_complete(...)`, so inevitably the event loop was already running. This error is detailed in this [StackOverflow post](https://stackoverflow.com/questions/46827007/runtimeerror-this-event-loop-is-already-running-in-python).
 
 In short, `asyncio` by default does not allow an event loop to be started when the event loop has already been started (event loop is "re-entered"). To override this check, and allow `run_until_complete()` to be called, while `run_until_complete()` is already on the callstack, we can use `nest_asyncio`. As the [docs](https://pypi.org/project/nest-asyncio/) state, "the `nest_asyncio` module patches asyncio to allow nested use of `asyncio.run` and `loop.run_until_complete`", just what we need. Now, the following code properly runs several tasks concurrently, including initializing the Telegram bot:
 
@@ -379,7 +379,7 @@ To construct a bloom filter, start with 2048-bits all set to 0. Then, for each a
 ## we subtract 2 from `len(bloom_filter_hex)` to account for the 0x prefix in the hexstring.
 bloom_filter = bin(int(bloom_filter_hex, 16))[2:].zfill((len(bloom_filter_hex)-2) * 4)
 ```
-Print bloom filter (in full 2048 binary glory):
+Print block 16234672's bloom filter (in full 2048-bit binary glory):
 `01110110101000001100000100011001111010011101000011010101000110010111100000010011101110010000001011000010110100110001011000101101100000100010010100101101101001000101101100011111000110001101000010100000100001011011010100110000010011001010000101111000111001010101100000001111001001111100001110011000010010100000010001010010111000000110100001011111001100100100101010000110100110011011110100000010001000011000000100000001000111100001010101101000101000000100111001010100110110001000000100010111011011101110100100111010001010001010001111110001100011001101000110100010111110011110111001111111000001101010101010101101110001111001000011000000011010001111101000011101101100001001000110000101010101110001001011100001010010011110001001111110010010101000100000000000110110000011110000010111101110000101000110000101001110101100001001010011110100111100110100010100100000011001000010011000011000011000110111100011100000111101011001011101011100100100100001010100011011111100001000100010000010111101001111010000010010001101110111100001010101000001001110110000100010100101001101001111001000110011000010011100001011010100110100001110110010100010000101000110100000010000010101101001100001111000000010000001100101010110110110000100100010010100011100111101100011001100000111111010101110100001100011110001101110110111101010001001010011110101000011001001011010001001001111101101000111011100000011010110100000000100010011101110101010101100101011111111010100101010110010001010101000111100000101011011000011011110111100101110100010101000010110111001010000101111100101001101011000111110110001011011100110000011010001001011010010011110100001001000010110100100000011000000000001110110101100111100100101010101100101111111010000110001000110101100010011011101101101011010000001101101100100101011010011010110111111111010000100010011100010111100101011111010100010101001011001100110111100100111011001001001011001110000111101001011000000000110000110010100011101011100001111010111000011110101010010111011100000100000011000000110001101101011100111100001000111100100000000111101100101100010`
 
 Let's denote a transaction log entry as $O \equiv (O_a, O_{\textbf{t}}, O_{\textbf{d}})$, where  $O_a$ is the 20-byte address that generates the logs (USDC token contract address in the example above), and $$O_{\textbf{t}} = (O_{\text{t}_0},O_{\text{t}_1},O_{\text{t}_2})$$ as the list of three 32-byte log topics (see the JSON `message` object in the previous section). Besides the logger’s address and three indexed topics, we might have some additional non-indexed data $O_{\textbf{d}}$ which is not relevant to computing the filter. 
@@ -411,9 +411,9 @@ kec_x = brownie.web3.keccak(hexstr=usdc_contract_address).hex()
 
 Then, we take “each of the first three pairs of bytes” of the keccak hash $\texttt{KEC}(x)$ (ie. three 4-hex-character chunks), convert to base-10 integers, then modulo each by $$2048$$. Note that each 2-byte chunk is capable of expressing 16 bits, ie. up to $$2^{16} = 65536$$ numbers, but we only take the “low-order 11 bits of each” out of the 16 bits expressed, since we modulo by $$2048=2^{11}$$.
 
-- $m(x,0)$ = `int('0x7b58',16) % 2048 =856`
-- $m(x,2)$ = `int('0x55bb',16) % 2048 =1467`
-- $m(x,4)$ =`int('0x92cd',16) % 2048 =717`
+- $m(x,0)$ = `int('0x7b58',16) % 2048 = 856`
+- $m(x,2)$ = `int('0x55bb',16) % 2048 = 1467`
+- $m(x,4)$ =`int('0x92cd',16) % 2048 = 717`
 
 Finally set bits at the indices $2047-m(x,i)=1191, 580, 1330$, respectively. Hence, we set $$\mathcal{B}_{1191}(y)=\mathcal{B}_{580}(y)=\mathcal{B}_{1330}(y)=1$$. To verify our work, we notice that indeed `bloom_filter[index]` for `index` in [1191,580,1330] are set to 1!! This indicates that there is definitely a log produced by the USDC contract.
 
